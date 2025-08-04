@@ -1,0 +1,144 @@
+---
+title: 'Initial Setup'
+description: 'Get started with FindU development in minutes'
+icon: 'rocket'
+---
+
+# Developer Initial Setup
+
+Welcome to FindU! This guide will help you set up your development environment and get you coding in minutes.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Git** (v2.30+)
+- **Node.js** (v18+ LTS recommended)
+- **npm** or **yarn**
+- **Supabase CLI** (optional, for database work)
+- **Claude Code** (optional, for AI-assisted development)
+
+<Check>
+**Pro tip:** If you're on macOS, you can install most prerequisites using Homebrew:
+```bash
+brew install git node supabase/tap/supabase
+```
+</Check>
+
+## Quick Start
+
+The fastest way to get started is using our automated setup script:
+
+```bash
+# Clone the dev-tools repository
+git clone https://github.com/findu-app/dev-tools.git
+
+# Run the setup script
+cd dev-tools
+./scripts/setup.sh
+```
+
+This script will:
+1. Clone all FindU repositories
+2. Install dependencies for each project
+3. Create your `.env.local` configuration
+4. Set up pre-commit hooks
+5. Configure MCP for Claude Code (if installed)
+
+## What Gets Installed
+
+After running the setup script, you'll have:
+
+```
+~/findu/
+├── dev-tools/          # Developer tools and scripts
+├── ios_app/           # iOS mobile app
+├── web_app/           # React dashboard
+├── supabase/          # Database & edge functions
+├── school_matching/   # ML matching engine
+├── data_scraping/     # Data collection scripts
+├── docs/              # Documentation (this site!)
+├── .env.local         # Your environment config
+└── findu              # CLI wrapper
+```
+
+## Environment Configuration
+
+The setup script creates a `.env.local` file in your findu root directory. This file controls which environment you're working with (development or production).
+
+<Warning>
+Never commit `.env.local` to version control! It contains sensitive credentials.
+</Warning>
+
+To switch environments:
+
+```bash
+# Switch to development
+./findu env switch dev
+
+# Switch to production (be careful!)
+./findu env switch prod
+
+# Check current environment
+./findu env status
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Environment Config" icon="gear" href="/developer/environment-config">
+    Learn about environment variables and configuration
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/developer/cli-reference">
+    Master the findu CLI commands
+  </Card>
+  <Card title="Workflow Guide" icon="code" href="/developer/workflow-guide">
+    Common development workflows and best practices
+  </Card>
+  <Card title="Join the Team" icon="users" href="https://github.com/findu-app">
+    Request access to the FindU GitHub organization
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Permission denied when running scripts">
+    Make sure the scripts are executable:
+    ```bash
+    chmod +x ./scripts/*.sh
+    chmod +x ./findu
+    ```
+  </Accordion>
+  
+  <Accordion title="Supabase CLI not found">
+    Install the Supabase CLI:
+    ```bash
+    # macOS
+    brew install supabase/tap/supabase
+    
+    # npm
+    npm install -g supabase
+    ```
+  </Accordion>
+  
+  <Accordion title="MCP configuration fails">
+    Make sure Claude Code is installed and you've run:
+    ```bash
+    ./findu update mcp
+    ```
+    Then restart Claude Code.
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+- **Slack**: Join #dev-help for quick questions
+- **GitHub Issues**: Report bugs or request features
+- **Documentation**: You're already here! 🎉
+
+---
+
+Ready to start building? Head to the [workflow guide](/developer/workflow-guide) to learn common development patterns.

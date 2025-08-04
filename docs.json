@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "FindU Developer Documentation",
   "colors": {
-    "primary": "#FF6B6B",
-    "light": "#4ECDC4",
-    "dark": "#DC2626"
+    "primary": "#16A34A",
+    "light": "#07C983",
+    "dark": "#15803D"
   },
   "favicon": "/favicon.svg",
   "navigation": {

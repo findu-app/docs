@@ -4,8 +4,8 @@
   "name": "FindU Developer Documentation",
   "colors": {
     "primary": "#FC5050",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "light": "#FC5050",
+    "dark": "#FC5050"
   },
   "favicon": "/favicon.svg",
   "navigation": {

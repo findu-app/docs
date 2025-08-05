@@ -1,0 +1,298 @@
+---
+title: 'CLI Reference'
+description: 'Complete reference for the findu CLI'
+icon: 'terminal'
+---
+
+# FindU CLI Reference
+
+The findu CLI is your command center for all development tasks. It wraps complex operations into simple, memorable commands.
+
+## Installation
+
+The CLI is automatically set up when you run the initial setup:
+
+```bash
+# After setup, the CLI is available at:
+./findu
+```
+
+<Tip>
+Add an alias to your shell profile for easier access:
+```bash
+echo "alias findu='~/findu/findu'" >> ~/.zshrc
+```
+</Tip>
+
+## Core Commands
+
+### Setup & Environment
+
+<CodeGroup>
+```bash setup
+# Initial setup for new developers
+./findu setup
+```
+
+```bash env
+# Switch between environments
+./findu env switch dev
+./findu env switch prod
+
+# Check current environment
+./findu env status
+```
+
+```bash update
+# Update dependencies across all repos
+./findu update deps
+
+# Update MCP configuration
+./findu update mcp
+```
+</CodeGroup>
+
+### Development
+
+<CodeGroup>
+```bash clone
+# Clone all FindU repositories
+./findu clone
+```
+
+```bash test
+# Run tests for a specific component
+./findu test ios
+./findu test web
+./findu test ml
+```
+
+```bash lint
+# Run linters
+./findu lint
+```
+</CodeGroup>
+
+### Documentation
+
+<CodeGroup>
+```bash docs
+# Start local documentation server
+./findu docs preview
+
+# Create new documentation
+./findu docs new [path]
+./findu docs new [path] api
+./findu docs new [path] guide
+
+# Validate documentation
+./findu docs validate
+```
+</CodeGroup>
+
+### Database Operations
+
+<CodeGroup>
+```bash db
+# Run migrations
+./findu db migrate
+
+# Create new migration
+./findu db new [name]
+
+# Reset database (dev only)
+./findu db reset
+```
+</CodeGroup>
+
+## Command Details
+
+### `findu setup`
+
+Runs the complete developer setup:
+- Clones all repositories
+- Installs dependencies
+- Creates `.env.local`
+- Configures MCP
+- Sets up pre-commit hooks
+
+**Options:**
+- `--skip-clone` - Skip repository cloning
+- `--skip-deps` - Skip dependency installation
+
+### `findu env`
+
+Manages environment configuration.
+
+**Subcommands:**
+- `switch [dev|prod]` - Switch active environment
+- `status` - Show current environment
+- `validate` - Check configuration validity
+
+### `findu update`
+
+Updates various components.
+
+**Subcommands:**
+- `deps` - Update all repository dependencies
+- `mcp` - Update MCP configuration for Claude Code
+- `tools` - Update dev-tools to latest version
+
+### `findu docs`
+
+Manages Mintlify documentation.
+
+**Subcommands:**
+- `preview` - Start local preview server (port 3000)
+- `new [path] [template]` - Create new doc page
+- `validate` - Check for broken links and errors
+- `install` - Install Mintlify CLI
+
+**Templates:**
+- `api` - API endpoint documentation
+- `guide` - Step-by-step guide
+- (default) - Basic documentation page
+
+### `findu test`
+
+Runs tests for specific components.
+
+**Components:**
+- `ios` - iOS app tests
+- `web` - Web app tests
+- `ml` - ML algorithm tests
+- `all` - All component tests
+
+**Options:**
+- `--watch` - Run in watch mode
+- `--coverage` - Generate coverage report
+
+### `findu db`
+
+Database operations (Supabase).
+
+**Subcommands:**
+- `migrate` - Apply pending migrations
+- `new [name]` - Create new migration
+- `reset` - Reset database (dev only!)
+- `status` - Show migration status
+
+## Advanced Usage
+
+### Chaining Commands
+
+Commands can be chained for workflows:
+
+```bash
+# Morning setup routine
+./findu env switch dev && ./findu update deps && ./findu db migrate
+```
+
+### Environment Variables
+
+The CLI respects these environment variables:
+
+```bash
+# Override default findu directory
+FINDU_ROOT=/custom/path ./findu setup
+
+# Skip confirmations
+FINDU_YES=1 ./findu db reset
+
+# Verbose output
+FINDU_VERBOSE=1 ./findu update deps
+```
+
+### Custom Scripts
+
+Add custom commands by creating scripts in `dev-tools/scripts/custom/`:
+
+```bash
+# Create dev-tools/scripts/custom/my-command.sh
+# Then run:
+./findu custom my-command
+```
+
+## Common Workflows
+
+### Starting Your Day
+
+```bash
+# 1. Switch to development
+./findu env switch dev
+
+# 2. Update dependencies
+./findu update deps
+
+# 3. Check migration status
+./findu db status
+```
+
+### Before Opening a PR
+
+```bash
+# 1. Run tests
+./findu test all
+
+# 2. Run linters
+./findu lint
+
+# 3. Update documentation
+./findu docs validate
+```
+
+### Debugging Issues
+
+```bash
+# Check environment
+./findu env status
+
+# Validate configuration
+./findu env validate
+
+# Update MCP if Claude Code issues
+./findu update mcp
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Command not found">
+    Make sure you're in the findu directory or have set up the alias:
+    ```bash
+    cd ~/findu
+    ./findu --help
+    ```
+  </Accordion>
+  
+  <Accordion title="Permission denied">
+    Make the CLI executable:
+    ```bash
+    chmod +x ~/findu/findu
+    ```
+  </Accordion>
+  
+  <Accordion title="Environment issues">
+    Validate your configuration:
+    ```bash
+    ./findu env validate
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Quick Reference Card
+
+| Command | Description |
+|---------|-------------|
+| `./findu setup` | Initial developer setup |
+| `./findu env switch dev` | Switch to development |
+| `./findu env status` | Check current environment |
+| `./findu update deps` | Update all dependencies |
+| `./findu update mcp` | Update Claude Code config |
+| `./findu docs preview` | Start docs server |
+| `./findu test all` | Run all tests |
+| `./findu db migrate` | Apply migrations |
+
+---
+
+Ready to dive into development? Check out the [workflow guide](/developer/workflow-guide) for common patterns and best practices.

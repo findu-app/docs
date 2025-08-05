@@ -1,172 +1,253 @@
 ---
-title: 'API Introduction'
-description: 'Overview of FindU APIs and authentication'
+title: 'API Architecture'
+description: 'Current state and future vision for FindU APIs'
 ---
 
-# FindU API Documentation
+# FindU API Architecture
 
-FindU provides several APIs for different parts of the platform. This section covers authentication and general API concepts.
+This document describes the current API landscape and provides guidance for future API development.
 
-## Available APIs
+## Current Architecture
+
+FindU currently uses a hybrid approach:
 
 <CardGroup cols={2}>
+  <Card title="Supabase Direct Access" icon="database">
+    Both web and iOS apps communicate directly with Supabase for most operations
+  </Card>
+  
   <Card title="Matching Algorithm API" icon="brain" href="/matching-algorithm/api-reference">
-    Personalized college recommendations and interaction tracking
-  </Card>
-  
-  <Card title="Partner Dashboard API" icon="chart-line" href="/api-reference/partner">
-    Analytics, messaging, and partner management endpoints
-  </Card>
-  
-  <Card title="Student App API" icon="mobile" href="/api-reference/student">
-    Authentication, profiles, and student features
-  </Card>
-  
-  <Card title="Admin API" icon="shield" href="/api-reference/admin">
-    Internal tools and platform management
+    Python FastAPI service for ML-powered recommendations
   </Card>
 </CardGroup>
 
-## Authentication
+### How It Works Today
 
-All FindU APIs use JWT tokens from Supabase Auth:
+```mermaid
+graph TD
+    A[iOS App] -->|Supabase SDK| B[Supabase]
+    C[Web App] -->|Supabase SDK| B
+    A -->|HTTP| D[Matching API]
+    C -->|HTTP| D
+    D -->|Query| B
+```
+
+## Future API Vision
+
+As FindU scales, we may benefit from dedicated API layers:
+
+### Potential Benefits
+
+<Tabs>
+  <Tab title="Partner API">
+    **Purpose**: Dedicated endpoints for school dashboard features
+    
+    **Benefits**:
+    - Simplified permissions model
+    - Aggregated analytics
+    - Batch operations
+    - Webhook management
+    
+    **Example Endpoints**:
+    - `GET /partner/analytics`
+    - `POST /partner/messages/bulk`
+    - `GET /partner/students/campaigns`
+  </Tab>
+  
+  <Tab title="Student API">
+    **Purpose**: Mobile-optimized endpoints
+    
+    **Benefits**:
+    - Reduced payload sizes
+    - Offline support
+    - Push notification integration
+    - Social features
+    
+    **Example Endpoints**:
+    - `POST /student/swipe`
+    - `GET /student/recommendations`
+    - `POST /student/profile`
+  </Tab>
+  
+  <Tab title="Admin API">
+    **Purpose**: Internal tools and monitoring
+    
+    **Benefits**:
+    - Audit logging
+    - Bulk operations
+    - System monitoring
+    - Content moderation
+    
+    **Example Endpoints**:
+    - `GET /admin/health`
+    - `POST /admin/users/suspend`
+    - `GET /admin/analytics/platform`
+  </Tab>
+</Tabs>
+
+## API Design Principles
+
+When building new APIs, follow these principles:
+
+### 1. RESTful Design
 
 ```bash
-Authorization: Bearer YOUR_JWT_TOKEN
+# Resources as nouns
+GET    /students         # List
+GET    /students/123     # Read
+POST   /students         # Create
+PUT    /students/123     # Update
+DELETE /students/123     # Delete
+
+# Actions as sub-resources
+POST   /students/123/swipe
+POST   /schools/456/save
 ```
 
-### Obtaining Tokens
+### 2. Consistent Patterns
 
-#### Web Applications
-```javascript
-import { supabase } from '@/lib/supabase'
+#### Request/Response Format
+```typescript
+// Request
+interface ApiRequest<T> {
+  data: T;
+  metadata?: {
+    client_version: string;
+    request_id: string;
+  };
+}
 
-// Get current session
-const { data: { session } } = await supabase.auth.getSession()
-const token = session?.access_token
-
-// Use in API calls
-fetch('https://api.findu.app/endpoint', {
-  headers: {
-    'Authorization': `Bearer ${token}`
-  }
-})
-```
-
-#### iOS Applications
-```swift
-import Supabase
-
-// Get current session
-let session = try await supabase.auth.session
-let token = session.accessToken
-
-// Use in API calls
-var request = URLRequest(url: url)
-request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-```
-
-## Base URLs
-
-| Environment | URL |
-|-------------|-----|
-| Production | `https://api.findu.app` |
-| Development | `https://api-dev.findu.app` |
-| Local | `http://localhost:8000` |
-
-## Common Headers
-
-```bash
-Content-Type: application/json
-Authorization: Bearer YOUR_JWT_TOKEN
-X-Client-Version: 1.0.0
-```
-
-## Response Format
-
-All API responses follow a consistent format:
-
-### Success Response
-```json
-{
-  "data": {
-    // Response data
-  },
-  "metadata": {
-    "timestamp": "2024-01-15T10:30:00Z",
-    "version": "1.0.0"
-  }
+// Response
+interface ApiResponse<T> {
+  data?: T;
+  error?: ApiError;
+  metadata: {
+    timestamp: string;
+    version: string;
+  };
 }
 ```
 
-### Error Response
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable error message",
-    "details": {
-      // Additional error context
-    }
-  }
+#### Error Handling
+```typescript
+interface ApiError {
+  code: string;          // MACHINE_READABLE_CODE
+  message: string;       // Human-friendly message
+  details?: unknown;     // Additional context
+  help_url?: string;     // Link to docs
 }
 ```
 
-## Rate Limiting
+### 3. Authentication
 
-API rate limits vary by endpoint type:
+All APIs should use Supabase JWT tokens:
 
-| Endpoint Type | Limit |
-|---------------|-------|
-| Read operations | 300/minute |
-| Write operations | 60/minute |
-| Analytics | 100/minute |
-| Batch operations | 20/minute |
-
-Rate limit headers:
+```typescript
+// Middleware example
+async function authenticate(req: Request) {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    throw new ApiError('UNAUTHORIZED', 'Missing token');
+  }
+  
+  const { data: user, error } = await supabase.auth.getUser(token);
+  
+  if (error) {
+    throw new ApiError('INVALID_TOKEN', 'Invalid or expired token');
+  }
+  
+  return user;
+}
 ```
-X-RateLimit-Limit: 300
-X-RateLimit-Remaining: 250
-X-RateLimit-Reset: 1640995200
-```
 
-## Pagination
-
-List endpoints support pagination:
+### 4. Versioning Strategy
 
 ```bash
-GET /api/students?limit=20&offset=40
+# URL path versioning
+/v1/students
+/v2/students  # Breaking changes
+
+# Header versioning for minor changes
+X-API-Version: 2024-01-15
 ```
 
-Response includes pagination metadata:
-```json
-{
-  "data": [...],
-  "pagination": {
-    "total": 150,
-    "limit": 20,
-    "offset": 40,
-    "has_more": true
-  }
-}
+## Implementation Guidance
+
+### When to Create an API
+
+Consider creating a dedicated API when:
+
+1. **Performance**: Direct Supabase queries become inefficient
+2. **Complexity**: Business logic is too complex for RLS policies
+3. **Integration**: External partners need access
+4. **Mobile**: Need optimized payloads for mobile apps
+
+### Technology Choices
+
+<CardGroup cols={2}>
+  <Card title="Node.js/TypeScript" icon="node">
+    For web-focused APIs matching our frontend stack
+  </Card>
+  
+  <Card title="Python FastAPI" icon="python">
+    For ML/data-heavy operations like matching
+  </Card>
+  
+  <Card title="Edge Functions" icon="bolt">
+    For lightweight, globally distributed endpoints
+  </Card>
+  
+  <Card title="GraphQL" icon="diagram-project">
+    For complex data relationships and flexible queries
+  </Card>
+</CardGroup>
+
+### Example API Structure
+
+```typescript
+// Example Partner API structure
+src/
+├── routes/
+│   ├── analytics.ts
+│   ├── students.ts
+│   └── messages.ts
+├── middleware/
+│   ├── auth.ts
+│   ├── rateLimit.ts
+│   └── logging.ts
+├── services/
+│   ├── supabase.ts
+│   └── cache.ts
+└── types/
+    └── api.ts
 ```
 
-## Versioning
+## Documentation Standards
 
-API versions are specified in the URL path:
-- Current: `/v2/endpoint`
-- Legacy: `/v1/endpoint` (deprecated)
+When creating new APIs:
 
-## SDKs
+1. **OpenAPI Specification**: Define endpoints in OpenAPI 3.0
+2. **Examples**: Provide request/response examples
+3. **SDKs**: Generate or create language-specific SDKs
+4. **Versioning**: Document all versions and changes
+5. **Rate Limits**: Clearly state limits and quotas
 
-Official SDKs are available:
-- [JavaScript/TypeScript](https://github.com/findu-app/js-sdk)
-- [Swift](https://github.com/findu-app/swift-sdk)
-- [Python](https://github.com/findu-app/python-sdk)
+## Security Considerations
+
+- **Authentication**: Always require valid JWT tokens
+- **Authorization**: Implement proper permission checks
+- **Rate Limiting**: Protect against abuse
+- **Input Validation**: Validate all inputs
+- **CORS**: Configure appropriately for web clients
+- **Monitoring**: Log all API access for auditing
 
 ## Next Steps
 
-Explore the specific API documentation:
-- [Matching Algorithm API](/matching-algorithm/api-reference)
-- [Partner Dashboard API](/api-reference/partner)
-- [Student App API](/api-reference/student)
+Currently, only the Matching Algorithm has a dedicated API:
+- [Matching Algorithm API Reference](/matching-algorithm/api-reference)
+
+For other features, refer to:
+- [Supabase Database Schema](/database/overview)
+- [Web App Architecture](/web-app/overview)
+- [iOS App Architecture](/ios-app/overview)

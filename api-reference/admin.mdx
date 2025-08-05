@@ -1,640 +1,311 @@
 ---
-title: "Admin API"
-description: "Internal API endpoints for platform administration"
+title: "Admin API Vision"
+description: "Future API design for internal platform management"
 icon: "shield"
 ---
 
-# Admin API
+# Admin API Vision
 
-The Admin API provides internal tools for FindU staff to manage the platform, monitor system health, and support users.
+This document outlines a potential future API design for internal FindU administration tools. Currently, admin functions are handled through direct database access.
 
-<Warning>
-These endpoints are restricted to FindU staff members with admin privileges. Unauthorized access will be logged and investigated.
-</Warning>
+<Note>
+This is a design reference document. These endpoints do not currently exist. Admin operations currently use direct Supabase access with appropriate permissions.
+</Note>
 
-## Authentication
+## Current Implementation
 
-Admin endpoints require staff JWT tokens with admin scope:
+Admin functions currently:
+- Use Supabase dashboard for database management
+- Implement custom SQL queries for reports
+- Handle user management through Supabase Auth Admin API
+- Monitor system health via Railway/Supabase dashboards
 
-```bash
-Authorization: Bearer YOUR_ADMIN_JWT_TOKEN
-X-Admin-Key: YOUR_ADMIN_API_KEY
+## Future API Benefits
+
+A dedicated Admin API could provide:
+
+### 1. Unified Operations
+
+Single interface for all admin tasks:
+```typescript
+// Future API approach
+const stats = await adminApi.getPlatformMetrics({
+  include: ['users', 'engagement', 'revenue', 'health']
+});
 ```
 
-## Platform Management
+### 2. Audit Trail
 
-### System Health Check
-
-Monitor system status and component health.
-
+Automatic logging of all admin actions:
+```typescript
+// Every action logged with context
+await adminApi.suspendUser(userId, {
+  reason: 'Terms violation',
+  duration: '7d',
+  notifyUser: true
+}); // Automatically logged with admin ID, timestamp, IP
 ```
-GET /v2/admin/health
+
+### 3. Bulk Operations
+
+Efficient handling of large-scale tasks:
+```typescript
+// Process multiple items efficiently
+await adminApi.bulkUpdateSchools({
+  filter: { lastUpdated: { before: '2023-01-01' } },
+  updates: { needsReview: true },
+  notify: 'data-team'
+});
 ```
 
-#### Response
+## Proposed Endpoint Structure
 
-```json
-{
-  "status": "healthy",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "components": {
-    "database": {
-      "status": "healthy",
-      "latency_ms": 12,
-      "connections": {
-        "active": 45,
-        "idle": 155,
-        "max": 200
-      }
-    },
-    "matching_service": {
-      "status": "healthy",
-      "version": "2.1.0",
-      "uptime_hours": 168,
-      "requests_per_minute": 234
-    },
-    "storage": {
-      "status": "healthy",
-      "usage_gb": 1245,
-      "limit_gb": 5000
-    },
-    "cache": {
-      "status": "healthy",
-      "hit_rate": 0.87,
-      "memory_mb": 2048
-    }
+### Platform Monitoring
+```
+GET  /admin/health
+GET  /admin/metrics
+GET  /admin/alerts
+POST /admin/alerts/:id/acknowledge
+GET  /admin/logs
+POST /admin/logs/search
+```
+
+### User Management
+```
+GET  /admin/users
+GET  /admin/users/:id
+POST /admin/users/search
+POST /admin/users/:id/suspend
+POST /admin/users/:id/delete
+POST /admin/users/:id/reset
+GET  /admin/users/:id/activity
+```
+
+### Partner Management
+```
+GET  /admin/partners
+GET  /admin/partners/:id
+POST /admin/partners/:id/approve
+POST /admin/partners/:id/suspend
+PATCH /admin/partners/:id/subscription
+GET  /admin/partners/:id/audit
+```
+
+### Content Moderation
+```
+GET  /admin/moderation/queue
+POST /admin/moderation/:id/review
+GET  /admin/moderation/reports
+POST /admin/moderation/bulk-action
+GET  /admin/moderation/patterns
+```
+
+### Data Management
+```
+POST /admin/schools/import
+POST /admin/schools/bulk-update
+GET  /admin/schools/validation
+POST /admin/data/export
+POST /admin/data/anonymize
+```
+
+### Financial Operations
+```
+GET  /admin/subscriptions
+POST /admin/subscriptions/:id/refund
+GET  /admin/revenue/report
+POST /admin/invoices/generate
+GET  /admin/payment-issues
+```
+
+## Security Patterns
+
+### Multi-Factor Authentication
+
+```typescript
+// Require 2FA for sensitive operations
+async function requireMFA(req: Request) {
+  const mfaToken = req.headers['x-mfa-token'];
+  
+  if (!mfaToken || !await verifyMFAToken(mfaToken, req.user)) {
+    throw new Error('MFA required for this operation');
   }
 }
+
+// Usage
+router.post('/admin/users/:id/delete', requireMFA, deleteUser);
 ```
 
-### Platform Statistics
+### Role-Based Permissions
 
-Get platform-wide metrics.
+```typescript
+enum AdminRole {
+  VIEWER = 'viewer',        // Read-only access
+  SUPPORT = 'support',      // User management
+  MODERATOR = 'moderator',  // Content moderation
+  ADMIN = 'admin',         // Full access
+  SUPER = 'super'          // System-level access
+}
 
-```
-GET /v2/admin/stats
-```
-
-#### Response
-
-```json
-{
-  "users": {
-    "total_students": 45678,
-    "active_last_30d": 23456,
-    "new_last_7d": 1234,
-    "profile_completion_avg": 0.78
-  },
-  "partners": {
-    "total_schools": 1234,
-    "total_organizations": 567,
-    "active_counselors": 890
-  },
-  "engagement": {
-    "daily_swipes": 123456,
-    "daily_messages": 12345,
-    "avg_session_minutes": 18.5
-  },
-  "matching": {
-    "avg_match_score": 0.72,
-    "recommendations_served_today": 234567,
-    "learning_phase_distribution": {
-      "discovery": 0.15,
-      "refinement": 0.35,
-      "stable": 0.50
+// Middleware for role checking
+function requireRole(roles: AdminRole[]) {
+  return (req: Request, res: Response, next: Next) => {
+    if (!roles.includes(req.user.role)) {
+      throw new ForbiddenError('Insufficient permissions');
     }
+    next();
+  };
+}
+```
+
+### Audit Logging
+
+```typescript
+interface AuditLog {
+  id: string;
+  timestamp: Date;
+  admin: {
+    id: string;
+    email: string;
+    role: AdminRole;
+  };
+  action: string;
+  target: {
+    type: 'user' | 'partner' | 'school' | 'system';
+    id: string;
+  };
+  details: Record<string, any>;
+  ip: string;
+  userAgent: string;
+}
+
+// Automatic logging decorator
+@Audited('user.suspend')
+async function suspendUser(userId: string, options: SuspendOptions) {
+  // Action automatically logged
+}
+```
+
+## Admin Dashboard Features
+
+### Real-Time Monitoring
+
+```typescript
+// WebSocket for live updates
+ws.on('connect', () => {
+  subscribeToMetrics(['activeUsers', 'apiCalls', 'errorRate']);
+});
+
+ws.on('metric', (data) => {
+  updateDashboard(data);
+});
+```
+
+### Automated Alerts
+
+```typescript
+interface AlertRule {
+  metric: string;
+  condition: 'above' | 'below' | 'equals';
+  threshold: number;
+  duration: string;
+  severity: 'info' | 'warning' | 'critical';
+  notify: string[]; // Email/Slack recipients
+}
+
+// Example rules
+const alertRules = [
+  {
+    metric: 'api.errorRate',
+    condition: 'above',
+    threshold: 0.05, // 5% error rate
+    duration: '5m',
+    severity: 'critical',
+    notify: ['on-call@findu.app']
   }
+];
+```
+
+### Batch Processing
+
+```typescript
+// Queue-based bulk operations
+interface BulkJob {
+  id: string;
+  type: 'userUpdate' | 'schoolImport' | 'dataExport';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  total: number;
+  results: {
+    success: number;
+    failed: number;
+    errors: Error[];
+  };
 }
+
+// Submit bulk job
+const job = await adminApi.submitBulkJob({
+  type: 'userUpdate',
+  filter: { inactive: true },
+  action: 'sendReengagementEmail'
+});
+
+// Monitor progress
+const status = await adminApi.getJobStatus(job.id);
 ```
 
-## User Management
+## Implementation Considerations
 
-### Search Users
+### Performance at Scale
 
-Search for students or partners.
+- Use read replicas for analytics queries
+- Implement caching for frequently accessed data
+- Queue bulk operations to prevent system overload
+- Use database indexes for common search patterns
 
-```
-POST /v2/admin/users/search
-```
+### Data Privacy
 
-#### Request Body
+- Anonymize user data in exports
+- Implement data retention policies
+- Provide user data deletion tools
+- Maintain compliance with privacy regulations
 
-```json
-{
-  "query": "john.doe@example.com",
-  "type": "student",
-  "filters": {
-    "created_after": "2024-01-01",
-    "has_profile": true
-  },
-  "limit": 50
-}
-```
+### Disaster Recovery
 
-#### Response
+- Regular automated backups
+- Point-in-time recovery capabilities
+- Audit log archival
+- Emergency access procedures
 
-```json
-{
-  "users": [
-    {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "email": "john.doe@example.com",
-      "type": "student",
-      "created_at": "2024-01-10T08:00:00Z",
-      "profile": {
-        "name": "John Doe",
-        "graduation_year": "2024",
-        "school_count": 45
-      },
-      "status": {
-        "active": true,
-        "last_login": "2024-01-15T09:00:00Z",
-        "flags": []
-      }
-    }
-  ]
-}
-```
+## Current Alternatives
 
-### Get User Details
+For now, admin tasks can be handled through:
+- Supabase Dashboard for database operations
+- Custom SQL queries for reports
+- Railway dashboard for deployment management
+- PostgreSQL admin tools for advanced operations
+- Custom scripts for bulk operations
 
-Retrieve comprehensive user information.
+## Development Guidelines
 
-```
-GET /v2/admin/users/{user_id}
-```
+If implementing admin features:
 
-#### Response
+1. **Security First**
+   - Always require authentication
+   - Implement principle of least privilege
+   - Log all actions
+   - Regular security audits
 
-```json
-{
-  "user": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "account": {
-      "email": "john.doe@example.com",
-      "phone": "+1234567890",
-      "created_at": "2024-01-10T08:00:00Z",
-      "auth_providers": ["apple", "email"]
-    },
-    "activity": {
-      "last_login": "2024-01-15T09:00:00Z",
-      "total_sessions": 67,
-      "total_swipes": 234,
-      "messages_sent": 45
-    },
-    "support_history": [
-      {
-        "ticket_id": "SUPP-123",
-        "date": "2024-01-12",
-        "issue": "Password reset",
-        "resolved": true
-      }
-    ]
-  }
-}
-```
+2. **User Safety**
+   - Confirmation for destructive actions
+   - Ability to undo/rollback changes
+   - Clear audit trails
+   - Notification of affected users
 
-### Suspend/Unsuspend User
+3. **Performance**
+   - Pagination for large datasets
+   - Async processing for bulk operations
+   - Caching for dashboard metrics
+   - Rate limiting to prevent abuse
 
-Manage user account status.
-
-```
-POST /v2/admin/users/{user_id}/suspend
-POST /v2/admin/users/{user_id}/unsuspend
-```
-
-#### Request Body
-
-```json
-{
-  "reason": "Violation of terms of service",
-  "duration_days": 7,
-  "notify_user": true
-}
-```
-
-### Reset User Data
-
-Clear specific user data for support purposes.
-
-```
-POST /v2/admin/users/{user_id}/reset
-```
-
-#### Request Body
-
-```json
-{
-  "reset_type": "swipe_history",
-  "confirm": true,
-  "reason": "User requested fresh start"
-}
-```
-
-## Partner Management
-
-### List Partner Organizations
-
-Get all partner organizations with filters.
-
-```
-GET /v2/admin/partners
-```
-
-#### Query Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| type | string | Organization type filter |
-| status | string | active, pending, suspended |
-| search | string | Search term |
-
-#### Response
-
-```json
-{
-  "partners": [
-    {
-      "id": "org_123",
-      "name": "Example University",
-      "type": "university",
-      "status": "active",
-      "entities": [
-        {
-          "id": "entity_123",
-          "name": "Main Campus",
-          "school_id": "school_123"
-        }
-      ],
-      "members": 12,
-      "created_at": "2023-09-01T10:00:00Z",
-      "subscription": {
-        "plan": "premium",
-        "expires_at": "2024-09-01T10:00:00Z"
-      }
-    }
-  ]
-}
-```
-
-### Approve Partner
-
-Approve a pending partner application.
-
-```
-POST /v2/admin/partners/{partner_id}/approve
-```
-
-#### Request Body
-
-```json
-{
-  "approved_by": "admin@findu.app",
-  "notes": "Verified institution credentials",
-  "subscription_plan": "premium"
-}
-```
-
-### Partner Analytics
-
-Get detailed partner platform usage.
-
-```
-GET /v2/admin/partners/{partner_id}/analytics
-```
-
-## Content Moderation
-
-### Review Queue
-
-Get content requiring moderation.
-
-```
-GET /v2/admin/moderation/queue
-```
-
-#### Response
-
-```json
-{
-  "items": [
-    {
-      "id": "mod_123",
-      "type": "message",
-      "content": {
-        "text": "Message content here...",
-        "sender_id": "user_123",
-        "recipient_id": "school_456"
-      },
-      "flags": ["spam", "inappropriate"],
-      "reported_by": ["user_789"],
-      "created_at": "2024-01-15T10:00:00Z"
-    }
-  ]
-}
-```
-
-### Moderate Content
-
-Take action on flagged content.
-
-```
-POST /v2/admin/moderation/{item_id}/action
-```
-
-#### Request Body
-
-```json
-{
-  "action": "remove",
-  "reason": "Spam content",
-  "notify_user": true,
-  "ban_user": false
-}
-```
-
-## School Data Management
-
-### Import School Data
-
-Bulk import or update school information.
-
-```
-POST /v2/admin/schools/import
-```
-
-#### Request Body
-
-```json
-{
-  "source": "scorecard_api",
-  "update_existing": true,
-  "dry_run": false,
-  "schools": [
-    {
-      "external_id": "123456",
-      "name": "New University",
-      "data": {
-        // School data fields
-      }
-    }
-  ]
-}
-```
-
-### Verify School Data
-
-Check and validate school information.
-
-```
-POST /v2/admin/schools/{school_id}/verify
-```
-
-#### Response
-
-```json
-{
-  "school_id": "school_123",
-  "validation_results": {
-    "name_match": true,
-    "location_verified": true,
-    "stats_current": false,
-    "last_updated": "2023-12-01",
-    "issues": [
-      "Enrollment data outdated",
-      "Missing SAT score ranges"
-    ]
-  }
-}
-```
-
-## Financial Operations
-
-### Subscription Management
-
-View and manage partner subscriptions.
-
-```
-GET /v2/admin/subscriptions
-```
-
-#### Response
-
-```json
-{
-  "subscriptions": [
-    {
-      "id": "sub_123",
-      "partner_id": "org_123",
-      "plan": "premium",
-      "status": "active",
-      "amount": 499.00,
-      "currency": "USD",
-      "billing_cycle": "monthly",
-      "next_billing_date": "2024-02-01",
-      "payment_method": "card_****_4242"
-    }
-  ]
-}
-```
-
-### Issue Refund
-
-Process refunds for subscriptions.
-
-```
-POST /v2/admin/subscriptions/{subscription_id}/refund
-```
-
-#### Request Body
-
-```json
-{
-  "amount": 499.00,
-  "reason": "Service issue",
-  "notify_customer": true
-}
-```
-
-## Support Tools
-
-### Create Support Ticket
-
-Create internal support ticket.
-
-```
-POST /v2/admin/support/tickets
-```
-
-#### Request Body
-
-```json
-{
-  "user_id": "user_123",
-  "type": "technical",
-  "priority": "high",
-  "subject": "Unable to access messages",
-  "description": "User reports messages not loading...",
-  "assigned_to": "support_team"
-}
-```
-
-### Send System Message
-
-Send important announcements to users.
-
-```
-POST /v2/admin/messages/broadcast
-```
-
-#### Request Body
-
-```json
-{
-  "recipients": {
-    "type": "segment",
-    "criteria": {
-      "user_type": "student",
-      "active_last_days": 30
-    }
-  },
-  "message": {
-    "title": "New Features Available!",
-    "body": "Check out our new scholarship search...",
-    "action": {
-      "type": "deep_link",
-      "url": "findu://scholarships"
-    }
-  },
-  "delivery": {
-    "push": true,
-    "in_app": true,
-    "email": false
-  }
-}
-```
-
-## Monitoring & Alerts
-
-### Get System Alerts
-
-View current system alerts and incidents.
-
-```
-GET /v2/admin/alerts
-```
-
-#### Response
-
-```json
-{
-  "alerts": [
-    {
-      "id": "alert_123",
-      "severity": "warning",
-      "type": "performance",
-      "message": "High API latency detected",
-      "details": {
-        "endpoint": "/recommendations",
-        "avg_latency_ms": 2500,
-        "threshold_ms": 1000
-      },
-      "started_at": "2024-01-15T10:00:00Z",
-      "acknowledged": false
-    }
-  ]
-}
-```
-
-### Acknowledge Alert
-
-Mark an alert as acknowledged.
-
-```
-POST /v2/admin/alerts/{alert_id}/acknowledge
-```
-
-## Audit Logs
-
-### Search Audit Logs
-
-Query system audit logs.
-
-```
-POST /v2/admin/audit/search
-```
-
-#### Request Body
-
-```json
-{
-  "filters": {
-    "user_id": "admin_123",
-    "action_type": "user_suspend",
-    "date_range": {
-      "start": "2024-01-01",
-      "end": "2024-01-31"
-    }
-  },
-  "limit": 100
-}
-```
-
-#### Response
-
-```json
-{
-  "logs": [
-    {
-      "id": "log_123",
-      "timestamp": "2024-01-15T10:30:00Z",
-      "user": {
-        "id": "admin_123",
-        "email": "admin@findu.app"
-      },
-      "action": "user_suspend",
-      "target": {
-        "type": "user",
-        "id": "user_456"
-      },
-      "details": {
-        "reason": "Terms violation",
-        "duration_days": 7
-      },
-      "ip_address": "192.168.1.1",
-      "user_agent": "Mozilla/5.0..."
-    }
-  ]
-}
-```
-
-## Rate Limits
-
-Admin endpoints have higher rate limits:
-
-| Endpoint Type | Limit |
-|---------------|-------|
-| Read operations | 1000/minute |
-| Write operations | 200/minute |
-| Bulk operations | 10/minute |
-| Broadcast messages | 1/minute |
-
-## Security
-
-All admin actions are:
-- Logged in audit trail
-- Require 2FA authentication
-- Restricted by IP allowlist
-- Monitored for anomalies
-
-## Error Handling
-
-```json
-{
-  "error": {
-    "code": "INSUFFICIENT_PERMISSIONS",
-    "message": "Admin role required for this action",
-    "required_scope": "admin:write"
-  }
-}
-```
+See [Database Management](/database/overview) for current admin capabilities.

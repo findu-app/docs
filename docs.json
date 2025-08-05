@@ -33,6 +33,16 @@
             ]
           },
           {
+            "group": "Database",
+            "pages": [
+              "database/overview",
+              "database/migrations-guide",
+              "database/schema-management",
+              "database/data-operations",
+              "database/troubleshooting"
+            ]
+          },
+          {
             "group": "Customization",
             "pages": [
               "essentials/settings",

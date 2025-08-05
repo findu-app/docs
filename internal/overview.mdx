@@ -1,0 +1,165 @@
+---
+title: "Internal Tools Overview"
+description: "Staff platform for managing FindU operations"
+icon: "shield-check"
+---
+
+# Internal Tools Platform
+
+The FindU web app includes powerful internal tools for staff to manage partners, provide support, and monitor platform health.
+
+## Access Levels
+
+<CardGroup cols={3}>
+  <Card title="FindU Staff" icon="user-shield">
+    - Partner support
+    - Basic queries
+    - Ticket management
+    - Documentation access
+  </Card>
+  
+  <Card title="FindU Admin" icon="user-crown">
+    - All staff permissions
+    - Partner creation
+    - Advanced queries
+    - System configuration
+  </Card>
+  
+  <Card title="Super Admin" icon="user-astronaut">
+    - Full system access
+    - Database management
+    - User management
+    - Critical operations
+  </Card>
+</CardGroup>
+
+## Key Features
+
+### Partner Management
+
+Comprehensive tools for managing school partners:
+
+<Steps>
+  <Step title="Organization Creation">
+    Create top-level organizations (universities, colleges, companies)
+  </Step>
+  
+  <Step title="Entity Management">
+    Add departments, programs, and offices within organizations
+  </Step>
+  
+  <Step title="Access Control">
+    Generate invitation codes and manage partner team members
+  </Step>
+  
+  <Step title="Profile Moderation">
+    Review and approve partner-created content
+  </Step>
+</Steps>
+
+### Support Dashboard
+
+<Tabs>
+  <Tab title="Ticket Queue">
+    - View all open support tickets
+    - Filter by priority and status
+    - Assign to team members
+    - Track SLA compliance
+  </Tab>
+  
+  <Tab title="Partner Lookup">
+    - Search partners by name/email
+    - View complete account history
+    - Check permissions and access
+    - See recent activity
+  </Tab>
+  
+  <Tab title="Quick Actions">
+    - Reset passwords
+    - Resend invitations
+    - Update permissions
+    - Fix common issues
+  </Tab>
+</Tabs>
+
+### Analytics & Monitoring
+
+Real-time platform insights:
+
+- **User Metrics**: Active students, partners, engagement rates
+- **System Health**: API performance, error rates, uptime
+- **Content Moderation**: Flagged content, approval queues
+- **Financial Overview**: Subscription status, usage metrics
+
+## Common Workflows
+
+<CardGroup cols={2}>
+  <Card title="Partner Onboarding" icon="user-plus" href="/internal/partner-management#onboarding">
+    Step-by-step process for adding new school partners
+  </Card>
+  
+  <Card title="Support Tickets" icon="headset" href="/internal/partner-management#support">
+    How to handle common partner support requests
+  </Card>
+  
+  <Card title="Database Queries" icon="database" href="/internal/common-queries">
+    Useful SQL queries for support tasks
+  </Card>
+  
+  <Card title="Troubleshooting" icon="wrench" href="/internal/partner-management#troubleshooting">
+    Common issues and their solutions
+  </Card>
+</CardGroup>
+
+## Security Considerations
+
+<Warning>
+  Internal tools have access to sensitive data. Always:
+  - Verify partner identity before making changes
+  - Use read-only queries when possible
+  - Document all critical actions
+  - Never share internal URLs or credentials
+</Warning>
+
+## Tool Access
+
+The internal tools are integrated into the main web app:
+
+1. **URL**: Same as partner dashboard
+2. **Login**: Use your FindU staff email
+3. **Navigation**: Staff menu appears after authentication
+4. **Permissions**: Based on your role in `findu_staff` table
+
+## Getting Help
+
+<Tabs>
+  <Tab title="Technical Issues">
+    - Check internal documentation
+    - Ask in #staff-tech-support
+    - Escalate to engineering if needed
+  </Tab>
+  
+  <Tab title="Process Questions">
+    - Review workflow guides
+    - Ask your team lead
+    - Check recent tickets for examples
+  </Tab>
+  
+  <Tab title="Access Problems">
+    Contact super admin for:
+    - Permission updates
+    - New tool access
+    - Account issues
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Partner Management" icon="users" href="/internal/partner-management">
+    Learn the complete partner workflow
+  </Card>
+  <Card title="Common Queries" icon="terminal" href="/internal/common-queries">
+    Database queries for daily tasks
+  </Card>
+</CardGroup>

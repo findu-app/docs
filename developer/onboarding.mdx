@@ -1,0 +1,208 @@
+---
+title: "Developer Onboarding"
+description: "Checklist for new FindU team members"
+icon: "user-plus"
+---
+
+# New Developer Onboarding
+
+Welcome to FindU! This checklist ensures you have everything needed to start contributing.
+
+## Pre-Setup Checklist
+
+Complete these items before running the setup script:
+
+<Steps>
+  <Step title="Request Access">
+    Contact your team lead to get:
+    - [ ] GitHub organization invite
+    - [ ] Supabase project access
+    - [ ] Slack workspace invite
+    - [ ] Railway team access (if needed)
+    - [ ] 1Password vault access
+  </Step>
+  
+  <Step title="Accept Invitations">
+    Check your email and accept:
+    - [ ] GitHub organization invitation
+    - [ ] Supabase project invitations (dev + prod)
+    - [ ] Slack workspace invitation
+    - [ ] Any other pending invites
+  </Step>
+  
+  <Step title="Install Prerequisites">
+    ```bash
+    # macOS (using Homebrew)
+    brew install git node supabase/tap/supabase
+    
+    # Verify installations
+    git --version      # Should be 2.30+
+    node --version     # Should be 18+
+    supabase --version # Latest version
+    ```
+    
+    For iOS development also install:
+    - [ ] Xcode from App Store
+    - [ ] CocoaPods: `sudo gem install cocoapods`
+  </Step>
+</Steps>
+
+## Environment Setup
+
+Once you have access, set up your development environment:
+
+<Steps>
+  <Step title="Get Credentials">
+    Ask your team lead for:
+    - Development Supabase credentials
+    - Production Supabase credentials (view-only)
+    - Any API keys needed
+    
+    <Warning>
+      Never share these credentials or commit them to Git!
+    </Warning>
+  </Step>
+  
+  <Step title="Run Setup Script">
+    ```bash
+    # Clone dev-tools and run setup
+    git clone https://github.com/findu-app/dev-tools.git
+    cd dev-tools
+    ./scripts/setup.sh
+    ```
+    
+    The script will prompt for your credentials and set everything up.
+  </Step>
+  
+  <Step title="Verify Setup">
+    ```bash
+    # Check CLI is working
+    ./findu env status
+    
+    # Should show: Current environment: dev
+    ```
+  </Step>
+</Steps>
+
+## First Day Tasks
+
+<CardGroup cols={2}>
+  <Card title="Read Documentation" icon="book">
+    - [Architecture Overview](/architecture)
+    - [Development Workflow](/developer/workflow-guide)
+    - Repository CLAUDE.md files
+  </Card>
+  
+  <Card title="Explore Codebase" icon="magnifying-glass">
+    - Browse each repository
+    - Understand file structure
+    - Read recent PRs
+  </Card>
+  
+  <Card title="Setup Dev Tools" icon="wrench">
+    - Configure your IDE
+    - Install recommended extensions
+    - Set up debugging
+  </Card>
+  
+  <Card title="Join Channels" icon="message">
+    Slack channels to join:
+    - #dev-general
+    - #dev-questions
+    - #dev-standup
+    - #random
+  </Card>
+</CardGroup>
+
+## Your First PR
+
+Complete this mini-project to familiarize yourself with our workflow:
+
+<Steps>
+  <Step title="Find Starter Task">
+    Look for issues labeled `good-first-issue` or ask your mentor for a suggestion.
+    
+    Good starter tasks:
+    - Fix a typo in documentation
+    - Add a missing TypeScript type
+    - Improve error messaging
+    - Add a unit test
+  </Step>
+  
+  <Step title="Create Branch">
+    ```bash
+    cd ~/findu/[relevant-repo]
+    git checkout dev
+    git pull origin dev
+    git checkout -b feature/your-first-task
+    ```
+  </Step>
+  
+  <Step title="Make Changes">
+    - Write your code
+    - Test locally
+    - Commit with clear message
+  </Step>
+  
+  <Step title="Open PR">
+    - Push to GitHub
+    - Create PR targeting `dev` branch
+    - Fill out PR template
+    - Tag your mentor for review
+  </Step>
+</Steps>
+
+## Week 1 Goals
+
+By the end of your first week, you should:
+
+- [ ] Have all tools and access set up
+- [ ] Successfully run each component locally
+- [ ] Understand the basic architecture
+- [ ] Complete your first PR
+- [ ] Attend team standup
+- [ ] Schedule 1:1 with team lead
+
+## Getting Help
+
+<Tabs>
+  <Tab title="Technical Issues">
+    1. Check repository CLAUDE.md files
+    2. Search Slack history
+    3. Ask in #dev-questions
+    4. Tag your mentor
+  </Tab>
+  
+  <Tab title="Access Issues">
+    Contact your team lead for:
+    - Missing permissions
+    - Account access
+    - Credential problems
+  </Tab>
+  
+  <Tab title="Process Questions">
+    - Review workflow guide
+    - Ask in team standup
+    - Schedule pairing session
+  </Tab>
+</Tabs>
+
+## Important Links
+
+<CardGroup cols={2}>
+  <Card title="Team Resources" icon="users">
+    - [Team Roster](https://docs.google.com/spreadsheets/d/xxx)
+    - [Meeting Calendar](https://calendar.google.com/xxx)
+    - [Sprint Board](https://github.com/orgs/findu-app/projects/1)
+  </Card>
+  
+  <Card title="Documentation" icon="book-open">
+    - [API Docs](/api-reference/introduction)
+    - [Database Schema](/database/overview)
+    - [Internal Tools](/internal/overview)
+  </Card>
+</CardGroup>
+
+<Note>
+  **Pro tip**: Keep this checklist bookmarked and refer back to it during your first few weeks!
+</Note>

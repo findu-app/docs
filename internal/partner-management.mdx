@@ -1,0 +1,330 @@
+---
+title: "Partner Management"
+description: "Complete guide for onboarding and supporting partners"
+icon: "handshake"
+---
+
+# Partner Management Guide
+
+This guide covers the complete partner lifecycle from initial onboarding to ongoing support.
+
+## Partner Onboarding Process {#onboarding}
+
+### Step 1: Create Organization & Entity
+
+<Steps>
+  <Step title="Navigate to Partner Management">
+    Internal Dashboard → Partner Management → Create New Partner
+  </Step>
+  
+  <Step title="Create Organization">
+    ```
+    Organization Name: University of Example
+    Type: University/College/Company/Nonprofit
+    ```
+    
+    Organizations are top-level containers for all entities.
+  </Step>
+  
+  <Step title="Create Entity">
+    ```
+    Entity Name: Admissions Office
+    Type: Admissions/Program/Department
+    Link to School: Search and select if applicable
+    ```
+    
+    Entities represent specific departments or programs.
+  </Step>
+</Steps>
+
+### Step 2: Generate Invitation
+
+<Steps>
+  <Step title="Find Created Entity">
+    The entity appears in Partners list with "Pending" status
+  </Step>
+  
+  <Step title="Generate Code">
+    Click "Generate Code" and enter:
+    - Admin email (MUST match signup email)
+    - Expiry (default 7 days)
+  </Step>
+  
+  <Step title="Share Securely">
+    Copy invitation URL and send via:
+    - Secure email
+    - Scheduled call
+    - Partner portal
+  </Step>
+</Steps>
+
+### Step 3: Partner Activation
+
+The partner will:
+1. Visit invitation URL
+2. Create account with matching email
+3. Automatically become entity admin
+4. Complete profile setup
+
+### Example Organization Structures
+
+<Tabs>
+  <Tab title="University">
+    ```
+    University of Nebraska–Lincoln
+    ├── Admissions Office
+    ├── Raikes School of Computer Science
+    ├── College of Business
+    └── College of Engineering
+    ```
+  </Tab>
+  
+  <Tab title="High School">
+    ```
+    Lincoln High School
+    ├── Counseling Department
+    └── College & Career Center
+    ```
+  </Tab>
+  
+  <Tab title="Company">
+    ```
+    TechCorp Educational Foundation
+    ├── Scholarship Program
+    └── Mentorship Initiative
+    ```
+  </Tab>
+</Tabs>
+
+## Support Workflows {#support}
+
+### Common Support Tickets
+
+<Accordion title="Can't Log In">
+  **Troubleshooting Steps:**
+  1. Verify email in `partner_users` table
+  2. Check for typos (case-sensitive)
+  3. Test password reset flow
+  4. Check auth logs for errors
+  
+  **Quick Fix:**
+  ```sql
+  -- Find user
+  SELECT * FROM partner_users WHERE email ILIKE '%partner.email%';
+  
+  -- Check recent auth attempts
+  SELECT * FROM auth.audit_log_entries 
+  WHERE user_email = 'partner@email.com'
+  AND created_at > NOW() - INTERVAL '24 hours';
+  ```
+</Accordion>
+
+<Accordion title="Missing Features/Permissions">
+  **Troubleshooting Steps:**
+  1. Check role and permissions
+  2. Verify entity is visible
+  3. Confirm affiliation exists
+  
+  **Quick Fix:**
+  ```sql
+  -- Check permissions
+  SELECT pa.*, pe.name, pe.show_in_app
+  FROM partner_affiliations pa
+  JOIN partner_entities pe ON pa.entity_id = pe.id
+  WHERE pa.partner_user_id = 'USER_ID';
+  
+  -- Grant admin access if needed
+  UPDATE partner_affiliations 
+  SET role = 'admin', 
+      permissions = '{"all": true}'::jsonb
+  WHERE id = 'AFFILIATION_ID';
+  ```
+</Accordion>
+
+<Accordion title="Can't Invite Team Members">
+  **Common Causes:**
+  - User lacks admin/manage_team permission
+  - Entity relationship issue
+  - Invalid email format
+  
+  **Quick Fix:**
+  1. Verify user has admin role
+  2. Check entity exists and is active
+  3. Test with different email
+  4. Generate manual invitation if needed
+</Accordion>
+
+<Accordion title="No Analytics Data">
+  **Troubleshooting Steps:**
+  1. Check for student interactions
+  2. Verify date range
+  3. Confirm entity linkage
+  
+  **Quick Fix:**
+  ```sql
+  -- Check interactions
+  SELECT COUNT(*) FROM student_school_interactions
+  WHERE partner_entity_id = 'ENTITY_ID'
+  AND interaction_date > NOW() - INTERVAL '30 days';
+  ```
+</Accordion>
+
+## Ticket Response Templates
+
+### Initial Response
+```
+Hi [Partner Name],
+
+Thank you for contacting FindU support. I've received your request 
+(Ticket #[ID]) and I'm looking into this right away.
+
+I'll have an update for you within [timeframe based on priority].
+
+Best regards,
+[Your Name]
+FindU Support Team
+```
+
+### Information Request
+```
+Hi [Partner Name],
+
+To help resolve this quickly, could you please provide:
+
+1. What were you trying to do when this occurred?
+2. Any error messages you saw (screenshots help!)
+3. Which browser/device you're using
+4. When you first noticed this issue
+
+This information will help me identify and fix the problem faster.
+
+Best regards,
+[Your Name]
+```
+
+### Resolution Confirmation
+```
+Hi [Partner Name],
+
+Good news! I've resolved the issue you reported. Here's what I did:
+[Brief explanation of fix]
+
+Please try [specific action] again and let me know if everything 
+is working as expected.
+
+I'll keep this ticket open for 24 hours in case you need any 
+clarification.
+
+Best regards,
+[Your Name]
+```
+
+## Database Troubleshooting {#troubleshooting}
+
+### Key Queries
+
+<CodeGroup>
+
+```sql Find Partner
+-- Search by email
+SELECT pu.*, pa.*, pe.name as entity_name
+FROM partner_users pu
+LEFT JOIN partner_affiliations pa ON pu.id = pa.partner_user_id
+LEFT JOIN partner_entities pe ON pa.entity_id = pe.id
+WHERE pu.email ILIKE '%search-term%';
+```
+
+```sql Check Permissions
+-- View all permissions for a user
+SELECT 
+  pu.email,
+  pe.name as entity,
+  pa.role,
+  pa.permissions
+FROM partner_affiliations pa
+JOIN partner_users pu ON pa.partner_user_id = pu.id
+JOIN partner_entities pe ON pa.entity_id = pe.id
+WHERE pu.id = 'USER_ID';
+```
+
+```sql Fix Visibility
+-- Make entity visible
+UPDATE partner_entities 
+SET show_in_app = true,
+    onboarding_status = 'completed'
+WHERE id = 'ENTITY_ID';
+```
+
+```sql Recent Activity
+-- Check recent partner activity
+SELECT * FROM student_school_interactions
+WHERE partner_entity_id IN (
+  SELECT entity_id FROM partner_affiliations 
+  WHERE partner_user_id = 'USER_ID'
+)
+ORDER BY interaction_date DESC
+LIMIT 50;
+```
+
+</CodeGroup>
+
+## Escalation Guide
+
+### When to Handle Yourself
+- Password resets
+- Permission updates
+- Basic troubleshooting
+- Invitation regeneration
+
+### When to Escalate
+- Database corruption
+- Missing foreign keys
+- Auth system issues
+- Feature bugs
+- Security concerns
+
+### Escalation Process
+1. Document all troubleshooting steps
+2. Include relevant queries/results
+3. Create detailed GitHub issue
+4. Tag in #partner-support channel
+5. Follow up with engineering
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Verify" icon="shield">
+    Confirm partner identity before making account changes
+  </Card>
+  
+  <Card title="Document Actions" icon="pencil">
+    Log all support actions in ticket system
+  </Card>
+  
+  <Card title="Test First" icon="flask">
+    Try fixes on test accounts before production
+  </Card>
+  
+  <Card title="Follow Up" icon="message">
+    Check back after 24 hours to ensure issue resolved
+  </Card>
+</CardGroup>
+
+## Quick Reference
+
+**Priority Response Times:**
+- 🔴 Urgent: 1 hour
+- 🟡 High: Same day  
+- 🟢 Normal: 24 hours
+- ⚪ Low: 48-72 hours
+
+**Common Issues:**
+- Login problems → Check email/auth
+- Missing features → Verify permissions
+- No data → Check interactions
+- Can't invite → Confirm admin role
+
+**Useful Links:**
+- [Database Queries](/internal/common-queries)
+- [Ticket Templates](#templates)
+- [Escalation Process](#escalation)

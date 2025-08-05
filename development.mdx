@@ -1,94 +1,193 @@
 ---
-title: 'Development'
-description: 'Preview changes locally to update your docs'
+title: "Local Development"
+description: "Running FindU components locally"
+icon: "laptop-code"
 ---
 
-<Info>
-  **Prerequisites**:
-  - Node.js version 19 or higher
-  - A docs repository with a `docs.json` file
-</Info>
+# Local Development
 
-Follow these steps to install and run Mintlify on your operating system.
+This guide covers running FindU components on your local machine.
 
-<Steps>
-<Step title="Install the Mintlify CLI">
+## Running Components
+
+### Web Dashboard
 
 ```bash
-npm i -g mint
+cd ~/findu/web_app
+npm install
+npm run dev
 ```
-</Step>
 
-<Step title="Preview locally">
+- **URL**: http://localhost:5173
+- **Hot Reload**: Yes
+- **Environment**: Uses `.env.local` settings
 
-Navigate to your docs directory where your `docs.json` file is located, and run the following command:
+### iOS App
 
 ```bash
-mint dev
+cd ~/findu/ios_app
+pod install
+open ios_app.xcodeproj
 ```
 
-A local preview of your documentation will be available at `http://localhost:3000`.
+- **Simulator**: iPhone 15 Pro recommended
+- **Device**: Requires developer certificate
+- **Backend**: Points to dev Supabase
 
-</Step>
-</Steps>
-
-## Custom ports
-
-By default, Mintlify uses port 3000. You can customize the port Mintlify runs on by using the `--port` flag. For example, to run Mintlify on port 3333, use this command:
+### ML Engine
 
 ```bash
-mint dev --port 3333
+cd ~/findu/matching-algorithm
+source venv/bin/activate
+python api_v2/main.py
 ```
 
-If you attempt to run Mintlify on a port that's already in use, it will use the next available port:
+- **URL**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **Requirements**: Python 3.9+
 
-```md
-Port 3000 is already in use. Trying 3001 instead.
-```
-
-## Mintlify versions
-
-Please note that each CLI release is associated with a specific version of Mintlify. If your local preview does not align with the production version, please update the CLI:
+### Supabase Local
 
 ```bash
-npm mint update
+cd ~/findu/supabase
+supabase start
 ```
 
-## Validating links
+- **Studio**: http://localhost:54323
+- **API**: http://localhost:54321
+- **Note**: Usually use cloud dev instance instead
 
-The CLI can assist with validating links in your documentation. To identify any broken links, use the following command:
+## Common Development Tasks
+
+### Switching Environments
 
 ```bash
-mint broken-links
+# Check current environment
+./findu env status
+
+# Switch to dev
+./findu env switch dev
+
+# Switch to prod (careful!)
+./findu env switch prod
 ```
 
-## Deployment
+### Running Tests
 
-If the deployment is successful, you should see the following:
+<Tabs>
+  <Tab title="Web App">
+    ```bash
+    cd ~/findu/web_app
+    npm test               # Unit tests
+    npm run test:e2e      # E2E tests
+    npm run lint          # Linting
+    npm run typecheck     # TypeScript
+    ```
+  </Tab>
+  
+  <Tab title="iOS App">
+    ```bash
+    cd ~/findu/ios_app
+    xcodebuild test -scheme ios_app
+    ```
+  </Tab>
+  
+  <Tab title="ML Engine">
+    ```bash
+    cd ~/findu/matching-algorithm
+    pytest tests/
+    flake8 src/
+    ```
+  </Tab>
+</Tabs>
 
-<Frame>
-  <img src="/images/checks-passed.png" alt="Screenshot of a deployment confirmation message that says All checks have passed." style={{ borderRadius: '0.5rem' }} />
-</Frame>
+### Database Tasks
 
-## Code formatting
+```bash
+# Create a new migration
+cd ~/findu/supabase
+supabase migration new your_migration_name
 
-We suggest using extensions on your IDE to recognize and format MDX. If you're a VSCode user, consider the [MDX VSCode extension](https://marketplace.visualstudio.com/items?itemName=unifiedjs.vscode-mdx) for syntax highlighting, and [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) for code formatting.
+# Apply migrations
+supabase db push
+
+# Reset database (dev only!)
+supabase db reset
+```
+
+## Debugging
+
+### Web Dashboard
+
+1. **Chrome DevTools**: Best for React debugging
+2. **React DevTools**: Install browser extension
+3. **Network Tab**: Monitor Supabase calls
+
+### iOS App
+
+1. **Xcode Debugger**: Breakpoints and variable inspection
+2. **Console Logs**: View in Xcode console
+3. **Network Debugging**: Use Proxyman or Charles
+
+### Database
+
+1. **Supabase Dashboard**: SQL editor and logs
+2. **Table Editor**: Visual data inspection
+3. **Logs Explorer**: Real-time query logs
+
+## Tips & Tricks
+
+<CardGroup cols={2}>
+  <Card title="Use Multiple Terminals" icon="terminal">
+    Run each service in its own terminal for easy monitoring
+  </Card>
+  
+  <Card title="Watch the Logs" icon="scroll">
+    Keep logs visible to catch errors early
+  </Card>
+  
+  <Card title="Test on Real Devices" icon="mobile">
+    iOS simulator doesn't catch all issues
+  </Card>
+  
+  <Card title="Use Dev Data" icon="database">
+    Never test with production data locally
+  </Card>
+</CardGroup>
 
 ## Troubleshooting
 
-<AccordionGroup>
-  <Accordion title='Error: Could not load the "sharp" module using the darwin-arm64 runtime'>
-
-    This may be due to an outdated version of node. Try the following:
-    1. Remove the currently-installed version of the CLI: `npm remove -g mint`
-    2. Upgrade to Node v19 or higher.
-    3. Reinstall the CLI: `npm i -g mint`
-  </Accordion>
-
-  <Accordion title="Issue: Encountering an unknown error">
+<Accordion title="Port Already in Use">
+  Kill the process using the port:
+  ```bash
+  # Find process
+  lsof -i :5173  # or :8000, :54321
   
-    Solution: Go to the root of your device and delete the `~/.mintlify` folder. Then run `mint dev` again.
-  </Accordion>
-</AccordionGroup>
+  # Kill it
+  kill -9 [PID]
+  ```
+</Accordion>
 
-Curious about what changed in the latest CLI version? Check out the [CLI changelog](https://www.npmjs.com/package/mintlify?activeTab=versions).
+<Accordion title="Module Not Found">
+  Clear caches and reinstall:
+  ```bash
+  # Web app
+  rm -rf node_modules package-lock.json
+  npm install
+  
+  # Python
+  pip install -r requirements.txt --force-reinstall
+  ```
+</Accordion>
+
+<Accordion title="Supabase Connection Failed">
+  1. Check environment: `./findu env status`
+  2. Verify credentials in `.env.local`
+  3. Test connection: `supabase status`
+</Accordion>
+
+## Next Steps
+
+- Review [workflow guide](/developer/workflow-guide) for git practices
+- Check [architecture](/architecture) to understand component interactions
+- Browse [contributing guide](/contributing) for coding standards

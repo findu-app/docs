@@ -1,0 +1,343 @@
+---
+title: "Common Database Queries"
+description: "SQL queries for staff support tasks"
+icon: "terminal"
+---
+
+# Common Database Queries
+
+Essential SQL queries for FindU staff to handle support tasks efficiently.
+
+<Warning>
+  Always use read-only queries when investigating issues. Only use UPDATE/DELETE with supervisor approval.
+</Warning>
+
+## Partner Queries
+
+### Find Partners
+
+<CodeGroup>
+
+```sql By Email
+SELECT 
+  pu.id,
+  pu.email,
+  pu.full_name,
+  pu.created_at,
+  COUNT(DISTINCT pa.entity_id) as entity_count
+FROM partner_users pu
+LEFT JOIN partner_affiliations pa ON pu.id = pa.partner_user_id
+WHERE pu.email ILIKE '%partner@example%'
+GROUP BY pu.id;
+```
+
+```sql By Organization
+SELECT 
+  po.name as org_name,
+  pe.name as entity_name,
+  pu.email,
+  pa.role
+FROM partner_organizations po
+JOIN partner_entities pe ON po.id = pe.organization_id
+LEFT JOIN partner_affiliations pa ON pe.id = pa.entity_id
+LEFT JOIN partner_users pu ON pa.partner_user_id = pu.id
+WHERE po.name ILIKE '%University%'
+ORDER BY po.name, pe.name;
+```
+
+```sql Recent Signups
+SELECT 
+  pu.*,
+  pe.name as entity_name,
+  po.name as org_name
+FROM partner_users pu
+JOIN partner_affiliations pa ON pu.id = pa.partner_user_id
+JOIN partner_entities pe ON pa.entity_id = pe.id
+LEFT JOIN partner_organizations po ON pe.organization_id = po.id
+WHERE pu.created_at > NOW() - INTERVAL '7 days'
+ORDER BY pu.created_at DESC;
+```
+
+</CodeGroup>
+
+### Check Permissions
+
+<CodeGroup>
+
+```sql User Permissions
+-- Complete permission check for a user
+SELECT 
+  pe.name as entity,
+  pa.role,
+  pa.permissions,
+  pcr.display_name as custom_role
+FROM partner_affiliations pa
+JOIN partner_entities pe ON pa.entity_id = pe.id
+LEFT JOIN partner_custom_roles pcr ON pa.role = pcr.role_name
+WHERE pa.partner_user_id = 'USER_ID';
+```
+
+```sql Missing Access
+-- Find users without expected permissions
+SELECT pu.email, pu.full_name
+FROM partner_users pu
+WHERE NOT EXISTS (
+  SELECT 1 FROM partner_affiliations pa
+  WHERE pa.partner_user_id = pu.id
+  AND pa.role IN ('admin', 'staff')
+);
+```
+
+</CodeGroup>
+
+## Student Interaction Queries
+
+### Engagement Metrics
+
+<CodeGroup>
+
+```sql Partner Activity
+-- Student interactions by partner entity
+SELECT 
+  pe.name,
+  COUNT(DISTINCT ssi.student_id) as unique_students,
+  COUNT(*) as total_interactions,
+  COUNT(CASE WHEN ssi.liked = true THEN 1 END) as likes,
+  COUNT(CASE WHEN ssi.disliked = true THEN 1 END) as dislikes
+FROM student_school_interactions ssi
+JOIN partner_entities pe ON ssi.partner_entity_id = pe.id
+WHERE ssi.interaction_date > NOW() - INTERVAL '30 days'
+GROUP BY pe.id, pe.name
+ORDER BY unique_students DESC;
+```
+
+```sql Recent Messages
+-- Recent partner-student conversations
+SELECT 
+  c.id as conversation_id,
+  pe.name as partner_entity,
+  COUNT(m.id) as message_count,
+  MAX(m.created_at) as last_message
+FROM conversations c
+JOIN partner_entities pe ON c.partner_entity_id = pe.id
+JOIN messages m ON c.id = m.conversation_id
+WHERE c.created_at > NOW() - INTERVAL '7 days'
+GROUP BY c.id, pe.name
+ORDER BY last_message DESC
+LIMIT 20;
+```
+
+```sql Scholarship Performance
+-- Scholarship view and save metrics
+SELECT 
+  s.title,
+  pe.name as entity_name,
+  COUNT(DISTINCT ssi.student_id) as unique_views,
+  COUNT(CASE WHEN ssi.saved = true THEN 1 END) as saves,
+  s.amount
+FROM scholarships s
+JOIN partner_entities pe ON s.partner_entity_id = pe.id
+LEFT JOIN student_scholarship_interactions ssi ON s.id = ssi.scholarship_id
+GROUP BY s.id, s.title, pe.name, s.amount
+ORDER BY unique_views DESC;
+```
+
+</CodeGroup>
+
+## Troubleshooting Queries
+
+### Account Issues
+
+<CodeGroup>
+
+```sql Auth Debugging
+-- Check authentication attempts
+SELECT 
+  id,
+  user_email,
+  ip_address,
+  created_at,
+  CASE 
+    WHEN raw_data->>'event_message' LIKE '%Invalid%' THEN 'Invalid Password'
+    WHEN raw_data->>'event_message' LIKE '%not found%' THEN 'User Not Found'
+    ELSE raw_data->>'event_message'
+  END as error_type
+FROM auth.audit_log_entries
+WHERE user_email = 'partner@example.com'
+AND created_at > NOW() - INTERVAL '24 hours'
+ORDER BY created_at DESC;
+```
+
+```sql Invitation Status
+-- Check invitation codes
+SELECT 
+  pi.*,
+  pu.full_name as invited_by_name,
+  pe.name as entity_name
+FROM partner_invitations pi
+JOIN partner_users pu ON pi.invited_by = pu.id
+JOIN partner_entities pe ON pi.entity_id = pe.id
+WHERE pi.email = 'invitee@example.com'
+OR pi.invitation_code = 'INV-XXXXX';
+```
+
+</CodeGroup>
+
+### Data Integrity
+
+<CodeGroup>
+
+```sql Orphaned Records
+-- Find affiliations without valid entities
+SELECT pa.*
+FROM partner_affiliations pa
+WHERE NOT EXISTS (
+  SELECT 1 FROM partner_entities pe
+  WHERE pe.id = pa.entity_id
+);
+
+-- Find entities without organizations
+SELECT pe.*
+FROM partner_entities pe
+WHERE pe.organization_id IS NOT NULL
+AND NOT EXISTS (
+  SELECT 1 FROM partner_organizations po
+  WHERE po.id = pe.organization_id
+);
+```
+
+```sql Duplicate Detection
+-- Find potential duplicate organizations
+SELECT 
+  name, 
+  COUNT(*) as count
+FROM partner_organizations
+GROUP BY name
+HAVING COUNT(*) > 1;
+
+-- Find users with multiple primary affiliations
+SELECT 
+  partner_user_id,
+  COUNT(*) as primary_count
+FROM partner_affiliations
+WHERE is_primary = true
+GROUP BY partner_user_id
+HAVING COUNT(*) > 1;
+```
+
+</CodeGroup>
+
+## Quick Fixes
+
+### Common Updates
+
+<CodeGroup>
+
+```sql Grant Admin
+-- Make user admin of their entity
+UPDATE partner_affiliations
+SET 
+  role = 'admin',
+  permissions = '{"all": true}'::jsonb
+WHERE partner_user_id = 'USER_ID'
+AND entity_id = 'ENTITY_ID';
+```
+
+```sql Fix Visibility
+-- Make entity visible in app
+UPDATE partner_entities
+SET 
+  show_in_app = true,
+  onboarding_status = 'completed'
+WHERE id = 'ENTITY_ID';
+```
+
+```sql Reset Invitation
+-- Extend invitation expiry
+UPDATE partner_invitations
+SET 
+  expires_at = NOW() + INTERVAL '7 days',
+  status = 'pending'
+WHERE invitation_code = 'INV-XXXXX'
+AND status != 'accepted';
+```
+
+</CodeGroup>
+
+<Warning>
+  Always verify the WHERE clause before running UPDATE queries. Consider wrapping in a transaction:
+  ```sql
+  BEGIN;
+  -- Your update query here
+  -- Check affected rows
+  ROLLBACK; -- or COMMIT if correct
+  ```
+</Warning>
+
+## Reporting Queries
+
+### Platform Health
+
+```sql
+-- Daily active partners
+SELECT 
+  DATE(created_at) as date,
+  COUNT(DISTINCT partner_user_id) as active_partners
+FROM messages
+WHERE sender_type = 'partner'
+AND created_at > NOW() - INTERVAL '30 days'
+GROUP BY DATE(created_at)
+ORDER BY date DESC;
+
+-- Support ticket metrics
+SELECT 
+  category,
+  priority,
+  AVG(EXTRACT(EPOCH FROM (resolved_at - created_at))/3600) as avg_hours_to_resolve,
+  COUNT(*) as ticket_count
+FROM support_tickets
+WHERE created_at > NOW() - INTERVAL '30 days'
+GROUP BY category, priority
+ORDER BY priority, category;
+```
+
+## Query Best Practices
+
+<Steps>
+  <Step title="Always Use ILIKE">
+    For text searches, use `ILIKE` for case-insensitive matching:
+    ```sql
+    WHERE email ILIKE '%example%'  -- Good
+    WHERE email LIKE '%example%'   -- Case-sensitive
+    ```
+  </Step>
+  
+  <Step title="Check Before Updating">
+    Always SELECT first to verify your WHERE clause:
+    ```sql
+    -- First, check what will be affected
+    SELECT * FROM table WHERE condition;
+    
+    -- Then update if correct
+    UPDATE table SET column = value WHERE condition;
+    ```
+  </Step>
+  
+  <Step title="Use Transactions">
+    For critical updates, use transactions:
+    ```sql
+    BEGIN;
+    UPDATE partner_entities SET show_in_app = true WHERE id = 'XXX';
+    -- Verify: SELECT * FROM partner_entities WHERE id = 'XXX';
+    COMMIT; -- or ROLLBACK if wrong
+    ```
+  </Step>
+  
+  <Step title="Save Common Queries">
+    Keep frequently used queries in a personal document for quick access
+  </Step>
+</Steps>
+
+<Note>
+  **Pro tip**: The Supabase SQL editor has query history. Use it to find queries you've run before!
+</Note>

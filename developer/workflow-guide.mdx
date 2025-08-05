@@ -16,9 +16,9 @@ This guide covers common development workflows and best practices for working on
     # Switch to development environment
     ./findu env switch dev
     
-    # Pull latest changes
-    cd ~/findu/supabase && git pull
-    cd ~/findu/web_app && git pull
+    # Pull latest changes from dev branch
+    cd ~/findu/supabase && git checkout dev && git pull
+    cd ~/findu/web_app && git checkout dev && git pull
     
     # Update dependencies
     ./findu update deps
@@ -27,7 +27,9 @@ This guide covers common development workflows and best practices for working on
   
   <Step title="Create a feature branch">
     ```bash
-    # In the relevant repository
+    # Create branch from dev (not main!)
+    git checkout dev
+    git pull origin dev
     git checkout -b feature/your-feature-name
     ```
   </Step>
@@ -53,11 +55,45 @@ This guide covers common development workflows and best practices for working on
     # Push your branch
     git push -u origin feature/your-feature-name
     
-    # Open PR on GitHub
+    # Open PR targeting dev branch
+    # - Base: dev (not main!)
+    # - Compare: feature/your-feature-name
     # Preview branch will be created automatically
     ```
   </Step>
 </Steps>
+
+## Branch Strategy
+
+### Overview
+
+FindU uses a three-tier branch strategy:
+
+```mermaid
+graph LR
+    A[feature/*] -->|PR| B[dev]
+    B -->|Auto PR| C[main]
+    C -->|Deploy| D[Production]
+```
+
+### Branch Protection Rules
+
+1. **main branch**:
+   - Requires PR with review
+   - CI/CD must pass
+   - No direct pushes
+   - Deploys to production automatically
+
+2. **dev branch**:
+   - Requires PR (no review needed)
+   - CI must pass
+   - Direct pushes allowed for fixes
+   - Deploys to dev Supabase automatically
+
+3. **feature branches**:
+   - No protection
+   - Always branch from dev
+   - Delete after merge
 
 ## Working with Supabase
 

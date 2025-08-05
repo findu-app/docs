@@ -1,80 +1,158 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quick Start"
+description: "Get FindU running locally in under 5 minutes"
+icon: "rocket"
 ---
 
-## Get started in three steps
+# Quick Start Guide
 
-Get your documentation site running locally and make your first customization.
+Get your FindU development environment set up and make your first contribution.
 
-### Step 1: Set up your local environment
+## Prerequisites
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+Before you begin, ensure you have:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Required Tools" icon="wrench">
+    - Git (v2.30+)
+    - Node.js (v18+ LTS)
+    - Supabase CLI
+    - Xcode (for iOS development)
+  </Card>
+  <Card title="Access Needed" icon="key">
+    - GitHub organization access
+    - Supabase credentials
+    - Slack workspace invite
+    - Railway access (optional)
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Don't have access yet? See our [onboarding checklist](/developer/onboarding) for new team members.
 </Note>
+
+## Automated Setup
+
+We've created a script that sets up your entire development environment:
+
+```bash
+# Clone the dev-tools repository
+git clone https://github.com/findu-app/dev-tools.git
+
+# Run the setup script
+cd dev-tools
+./scripts/setup.sh
+```
+
+This script will:
+1. Clone all FindU repositories
+2. Install dependencies for each project
+3. Create your `.env.local` configuration
+4. Set up pre-commit hooks
+5. Configure the findu CLI tool
+
+## Manual Setup (Alternative)
+
+If you prefer manual setup or need to troubleshoot:
+
+<Steps>
+  <Step title="Clone Repositories">
+    ```bash
+    mkdir ~/findu && cd ~/findu
+    git clone https://github.com/findu-app/ios_app.git
+    git clone https://github.com/findu-app/web_app.git
+    git clone https://github.com/findu-app/supabase.git
+    git clone https://github.com/findu-app/matching-algorithm.git
+    ```
+  </Step>
+  
+  <Step title="Install Dependencies">
+    ```bash
+    # Web app
+    cd web_app && npm install
+    
+    # iOS app
+    cd ../ios_app && pod install
+    
+    # ML engine
+    cd ../matching-algorithm
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    ```
+  </Step>
+  
+  <Step title="Configure Environment">
+    Create `~/.env.local` with your credentials (get from team lead)
+  </Step>
+</Steps>
+
+## Verify Your Setup
+
+Run these commands to verify everything is working:
+
+```bash
+# Check environment
+./findu env status
+
+# Run web app
+cd ~/findu/web_app && npm run dev
+
+# Check database connection
+cd ~/findu/supabase && supabase status
+```
+
+## Make Your First Change
+
+<Steps>
+  <Step title="Switch to dev branch">
+    ```bash
+    cd ~/findu/web_app
+    git checkout dev
+    git pull origin dev
+    ```
+  </Step>
+  
+  <Step title="Create feature branch">
+    ```bash
+    git checkout -b feature/your-name-first-pr
+    ```
+  </Step>
+  
+  <Step title="Make a small change">
+    Edit any file (try updating a comment or fixing a typo)
+  </Step>
+  
+  <Step title="Commit and push">
+    ```bash
+    git add .
+    git commit -m "My first FindU commit"
+    git push -u origin feature/your-name-first-pr
+    ```
+  </Step>
+  
+  <Step title="Open PR">
+    Go to GitHub and create a pull request targeting the `dev` branch
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Understand the Architecture" icon="sitemap" href="/architecture">
+    Learn how all the pieces fit together
+  </Card>
+  <Card title="Development Workflow" icon="code-branch" href="/developer/workflow-guide">
+    Master our git workflow and best practices
+  </Card>
+  <Card title="Find an Issue" icon="bug" href="/contributing">
+    Browse good first issues to work on
+  </Card>
+  <Card title="Join Slack" icon="slack" href="https://findu-team.slack.com">
+    Connect with the team for help
+  </Card>
+</CardGroup>
+
+<Warning>
+  Always create branches from `dev`, not `main`! Our main branch is protected and only receives updates from dev.
+</Warning>

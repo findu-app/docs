@@ -1,97 +1,117 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: 'Welcome to FindU'
+description: 'Developer documentation for the FindU college matching platform'
+icon: 'graduation-cap'
 ---
 
-## Setting up
+# Welcome to FindU Development
 
-Get your documentation site up and running in minutes.
+FindU is a comprehensive college matching platform that connects students with their ideal schools through personalized recommendations, direct communication, and scholarship opportunities.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+## What is FindU?
 
-## Make it yours
+FindU revolutionizes the college search process through three integrated platforms:
 
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={3}>
+  <Card title="Student iOS App" icon="mobile">
+    Swipe-based college discovery with ML-powered matching
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Partner Dashboard" icon="browser">
+    Web portal for schools to engage with prospective students
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Internal Tools" icon="shield">
+    Staff platform for partner management and support
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Platform Impact
 
-Everything you need to create world-class documentation.
+<CardGroup cols={4}>
+  <Card>
+    <h3>📱 50,000+</h3>
+    <p>Active students</p>
+  </Card>
+  <Card>
+    <h3>🏫 2,000+</h3>
+    <p>Partner schools</p>
+  </Card>
+  <Card>
+    <h3>🎯 85%</h3>
+    <p>Match accuracy</p>
+  </Card>
+  <Card>
+    <h3>💰 $10M+</h3>
+    <p>Scholarships found</p>
+  </Card>
+</CardGroup>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## For Developers
 
-## Need inspiration?
+<Steps>
+  <Step title="Understand the Architecture">
+    Learn how our [multi-repository system](/architecture) works together
+  </Step>
+  <Step title="Set Up Your Environment">
+    Follow our [automated setup guide](/developer/initial-setup) to get running in minutes
+  </Step>
+  <Step title="Make Your First Contribution">
+    Check out our [contributing guide](/contributing) for good first issues
+  </Step>
+</Steps>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+## Quick Links
+
+<CardGroup cols={2}>
+  <Card title="Developer Setup" icon="code" href="/developer/initial-setup">
+    Get your local environment configured
+  </Card>
+  <Card title="Architecture Overview" icon="sitemap" href="/architecture">
+    Understand how components interact
+  </Card>
+  <Card title="Workflow Guide" icon="route" href="/developer/workflow-guide">
+    Learn our development process
+  </Card>
+  <Card title="Internal Tools" icon="shield-check" href="/internal/overview">
+    Staff platform documentation
+  </Card>
+</CardGroup>
+
+## Tech Stack
+
+<Tabs>
+  <Tab title="Frontend">
+    - **iOS**: Swift/SwiftUI
+    - **Web**: React 19 + TypeScript + Vite
+    - **UI**: Radix UI + shadcn/ui + Tailwind
+  </Tab>
+  <Tab title="Backend">
+    - **Database**: Supabase (PostgreSQL)
+    - **ML Engine**: Python FastAPI
+    - **Auth**: Supabase Auth
+    - **Hosting**: Railway
+  </Tab>
+  <Tab title="Infrastructure">
+    - **Version Control**: GitHub
+    - **CI/CD**: GitHub Actions
+    - **Environments**: Dev + Production
+    - **Monitoring**: Supabase Dashboard
+  </Tab>
+</Tabs>
+
+## Need Help?
+
+<CardGroup cols={3}>
+  <Card title="Slack" icon="slack" href="https://findu-team.slack.com/join/shared_invite/xxx">
+    Join our developer community
+  </Card>
+  <Card title="GitHub" icon="github" href="https://github.com/findu-app">
+    Browse code and issues
+  </Card>
+  <Card title="Support" icon="life-ring" href="mailto:dev@findu.app">
+    Contact the dev team
+  </Card>
+</CardGroup>
+
+<Note>
+  **New to FindU?** Start with our [onboarding checklist](/developer/onboarding) to ensure you have everything you need.
+</Note>

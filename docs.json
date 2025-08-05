@@ -27,7 +27,9 @@
               "developer/initial-setup",
               "developer/environment-config",
               "developer/cli-reference",
-              "developer/workflow-guide"
+              "developer/workflow-guide",
+              "developer/ios-api-setup",
+              "developer/ios-api-integration"
             ]
           },
           {

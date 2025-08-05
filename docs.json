@@ -34,10 +34,25 @@
             ]
           },
           {
-            "group": "Platform Components",
+            "group": "Web App",
             "pages": [
+              "web-app/overview",
+              "web-app/components"
+            ]
+          },
+          {
+            "group": "iOS App",
+            "pages": [
+              "ios-app/overview",
               "developer/ios-api-setup",
               "developer/ios-api-integration"
+            ]
+          },
+          {
+            "group": "Matching Algorithm",
+            "pages": [
+              "matching-algorithm/overview",
+              "matching-algorithm/api-reference"
             ]
           },
           {
@@ -84,7 +99,10 @@
           {
             "group": "API Documentation",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/partner",
+              "api-reference/student",
+              "api-reference/admin"
             ]
           },
           {
@@ -108,7 +126,7 @@
         },
         {
           "anchor": "Slack",
-          "href": "https://findu-team.slack.com",
+          "href": "https://findu-team.slack.com/archives/dev",
           "icon": "slack"
         }
       ]
@@ -128,7 +146,7 @@
     "primary": {
       "type": "button",
       "label": "Partner Dashboard",
-      "href": "https://app.findu.com"
+      "href": "https://findu-web-production.up.railway.app/"
     }
   },
   "contextual": {

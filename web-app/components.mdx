@@ -1,0 +1,310 @@
+---
+title: "Component Library"
+description: "UI components and patterns in the FindU web app"
+icon: "shapes"
+---
+
+# Component Library Guide
+
+The FindU web app uses a combination of custom components and the shadcn/ui component library built on Radix UI primitives.
+
+## Component Organization
+
+### Base UI Components (`/components/ui/`)
+These are foundational components from shadcn/ui:
+
+```
+ui/
+├── button.tsx       # Buttons with variants
+├── card.tsx         # Container components
+├── dialog.tsx       # Modal dialogs
+├── input.tsx        # Form inputs
+├── select.tsx       # Dropdown selects
+├── table.tsx        # Data tables
+└── ...             # 30+ components
+```
+
+### Custom Components
+App-specific components that compose the base UI:
+
+```
+components/
+├── page-header.tsx     # Consistent page headers
+├── data-displays/      # Charts and visualizations
+├── app-sidebar.tsx     # Navigation sidebar
+└── team-switcher.tsx   # Multi-entity selector
+```
+
+## Using shadcn/ui Components
+
+### Button Example
+```tsx
+import { Button } from "@/components/ui/button"
+
+// Primary button
+<Button>Save Changes</Button>
+
+// Secondary variant
+<Button variant="secondary">Cancel</Button>
+
+// Destructive action
+<Button variant="destructive">Delete</Button>
+
+// Ghost button (no background)
+<Button variant="ghost">Learn More</Button>
+
+// With icon
+<Button>
+  <PlusIcon className="mr-2 h-4 w-4" />
+  Add New
+</Button>
+```
+
+### Card Layouts
+```tsx
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+
+<Card>
+  <CardHeader>
+    <CardTitle>Analytics Overview</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <p>Your content here</p>
+  </CardContent>
+</Card>
+```
+
+### Form Controls
+```tsx
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// Text input
+<div className="space-y-2">
+  <Label htmlFor="email">Email</Label>
+  <Input id="email" type="email" placeholder="partner@school.edu" />
+</div>
+
+// Select dropdown
+<Select>
+  <SelectTrigger>
+    <SelectValue placeholder="Choose timeframe" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="30">Last 30 days</SelectItem>
+    <SelectItem value="90">Last 90 days</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+## Custom Component Patterns
+
+### Page Header Component
+Standard header for all pages:
+
+```tsx
+import { PageHeader } from "@/components/page-header"
+
+<PageHeader
+  title="Campaign Analytics"
+  description="Track student engagement with your school"
+  actions={
+    <Button>Export Data</Button>
+  }
+/>
+```
+
+### Data Display Components
+
+#### Stats Card
+```tsx
+import { StatsCard } from "@/components/data-displays/stats-card"
+
+<StatsCard
+  title="Total Students"
+  value={1234}
+  change={+12.5}
+  changeLabel="vs last month"
+/>
+```
+
+#### Engagement Chart
+```tsx
+import { EngagementChart } from "@/components/data-displays/engagement-chart"
+
+<EngagementChart
+  data={chartData}
+  timeframe="30d"
+  onTimeframeChange={(tf) => setTimeframe(tf)}
+/>
+```
+
+### Loading States
+```tsx
+import { Skeleton } from "@/components/ui/skeleton"
+
+// Loading cards
+<div className="grid gap-4 md:grid-cols-3">
+  {[1, 2, 3].map((i) => (
+    <Card key={i}>
+      <CardHeader>
+        <Skeleton className="h-4 w-[150px]" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-[100px]" />
+      </CardContent>
+    </Card>
+  ))}
+</div>
+```
+
+## Composing Complex UI
+
+### Data Table with Filters
+```tsx
+export function StudentTable() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <StudentFilters />
+        <Button>
+          <Download className="mr-2 h-4 w-4" />
+          Export
+        </Button>
+      </div>
+      
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Student</TableHead>
+            <TableHead>Match Score</TableHead>
+            <TableHead>Interaction</TableHead>
+            <TableHead>Date</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {students.map((student) => (
+            <TableRow key={student.id}>
+              <TableCell>{student.name}</TableCell>
+              <TableCell>
+                <Badge variant={getScoreVariant(student.score)}>
+                  {student.score}%
+                </Badge>
+              </TableCell>
+              <TableCell>{student.interaction}</TableCell>
+              <TableCell>{formatDate(student.date)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+```
+
+## Component Best Practices
+
+### Accessibility
+- All interactive elements have proper ARIA labels
+- Keyboard navigation support
+- Focus management in modals
+- Color contrast compliance
+
+### Responsive Design
+```tsx
+// Mobile-first responsive classes
+<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+  {/* 1 column mobile, 2 tablet, 3 desktop */}
+</div>
+
+// Conditional rendering for mobile
+<Button className="hidden md:inline-flex">
+  Desktop Only Action
+</Button>
+```
+
+### Performance
+- Use React.memo for expensive components
+- Virtualize long lists with @tanstack/react-virtual
+- Lazy load heavy components
+- Optimize re-renders with proper key props
+
+## Styling Components
+
+### Using Tailwind Classes
+```tsx
+// Consistent spacing and colors
+<Card className="p-6 space-y-4 border-muted">
+  <h3 className="text-lg font-semibold text-foreground">
+    Title
+  </h3>
+  <p className="text-sm text-muted-foreground">
+    Description text
+  </p>
+</Card>
+```
+
+### Theme Variables
+The app uses CSS variables for theming:
+- `--background`: Page background
+- `--foreground`: Primary text
+- `--muted`: Secondary elements
+- `--primary`: Brand color
+- `--destructive`: Error states
+
+## Component Documentation
+
+### Props Documentation
+```tsx
+interface PageHeaderProps {
+  /** Main title of the page */
+  title: string;
+  /** Optional description text */
+  description?: string;
+  /** Action buttons to display */
+  actions?: React.ReactNode;
+  /** Additional classes */
+  className?: string;
+}
+```
+
+### Usage Examples
+Each component should have:
+1. Basic usage example
+2. Common variations
+3. Props documentation
+4. Accessibility notes
+
+## Testing Components
+
+### Component Testing
+```tsx
+import { render, screen } from '@testing-library/react'
+import { Button } from '@/components/ui/button'
+
+test('renders button with text', () => {
+  render(<Button>Click me</Button>)
+  expect(screen.getByRole('button')).toHaveTextContent('Click me')
+})
+```
+
+### Storybook (if implemented)
+```tsx
+export default {
+  title: 'UI/Button',
+  component: Button,
+}
+
+export const Primary = {
+  args: {
+    children: 'Button',
+  },
+}
+```
+
+## Next Steps
+
+- [State Management Patterns](/web-app/state-management)
+- [Styling Guide](/web-app/styling-guide)
+- [Testing Strategies](/web-app/testing)

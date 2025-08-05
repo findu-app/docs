@@ -1,0 +1,748 @@
+---
+title: "Student App API"
+description: "API endpoints for the FindU iOS app and student features"
+icon: "mobile"
+---
+
+# Student App API
+
+The Student App API powers the FindU iOS application, providing endpoints for authentication, profile management, college discovery, and messaging.
+
+## Authentication
+
+### Sign In with Apple
+
+Authenticate using Apple Sign In.
+
+<CodeGroup>
+```swift Swift
+let appleIDProvider = ASAuthorizationAppleIDProvider()
+let request = appleIDProvider.createRequest()
+request.requestedScopes = [.fullName, .email]
+
+// Handle authorization
+let authController = ASAuthorizationController(authorizationRequests: [request])
+authController.delegate = self
+authController.performRequests()
+```
+
+```bash API Call
+curl -X POST https://api.findu.app/v2/auth/apple \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id_token": "APPLE_ID_TOKEN",
+    "nonce": "NONCE_VALUE"
+  }'
+```
+</CodeGroup>
+
+#### Response
+
+```json
+{
+  "session": {
+    "access_token": "eyJhbGciOiJIUzI1NiIs...",
+    "refresh_token": "refresh_token_value",
+    "expires_in": 3600,
+    "user": {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "email": "student@example.com",
+      "has_profile": false
+    }
+  }
+}
+```
+
+### Sign In with Google
+
+Authenticate using Google Sign In.
+
+```
+POST /v2/auth/google
+```
+
+#### Request Body
+
+```json
+{
+  "id_token": "GOOGLE_ID_TOKEN",
+  "access_token": "GOOGLE_ACCESS_TOKEN"
+}
+```
+
+### Email/Password Auth
+
+Traditional email authentication.
+
+```
+POST /v2/auth/email
+```
+
+#### Request Body
+
+```json
+{
+  "email": "student@example.com",
+  "password": "secure_password"
+}
+```
+
+### Refresh Token
+
+Refresh an expired access token.
+
+```
+POST /v2/auth/refresh
+```
+
+#### Request Body
+
+```json
+{
+  "refresh_token": "REFRESH_TOKEN"
+}
+```
+
+## Profile Management
+
+### Create Profile
+
+Create initial student profile after authentication.
+
+```
+POST /v2/profile
+```
+
+#### Request Body
+
+```json
+{
+  "personal": {
+    "first_name": "John",
+    "last_name": "Doe",
+    "date_of_birth": "2006-05-15",
+    "phone": "+1234567890"
+  },
+  "academic": {
+    "graduation_year": "2024",
+    "high_school_name": "Example High School",
+    "gpa": 3.8,
+    "weighted_gpa": 4.2,
+    "class_rank": "Top 10%",
+    "sat": 1420,
+    "act": 32,
+    "ap_classes": 6
+  },
+  "preferences": {
+    "majors": ["Computer Science", "Engineering"],
+    "school_size": "medium",
+    "location_type": ["urban", "suburban"],
+    "distance_preference": "anywhere",
+    "greek_life": "no_preference",
+    "athletics": "intramural"
+  },
+  "location": {
+    "city": "San Francisco",
+    "state": "CA",
+    "zip": "94102"
+  }
+}
+```
+
+### Get Profile
+
+Retrieve current user's profile.
+
+```
+GET /v2/profile
+```
+
+#### Response
+
+```json
+{
+  "profile": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "personal": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "avatar_url": "https://storage.findu.app/avatars/..."
+    },
+    "academic": {
+      "gpa": 3.8,
+      "sat": 1420,
+      "graduation_year": "2024"
+    },
+    "stats": {
+      "schools_viewed": 145,
+      "schools_liked": 42,
+      "messages_sent": 23,
+      "scholarships_saved": 8
+    },
+    "completion_percentage": 85
+  }
+}
+```
+
+### Update Profile
+
+Update profile information.
+
+```
+PATCH /v2/profile
+```
+
+#### Request Body
+
+```json
+{
+  "academic": {
+    "gpa": 3.85,
+    "new_test_scores": {
+      "sat": 1450
+    }
+  },
+  "preferences": {
+    "majors": ["Computer Science", "Data Science", "Engineering"]
+  }
+}
+```
+
+### Upload Avatar
+
+Upload profile picture.
+
+```
+POST /v2/profile/avatar
+```
+
+Multipart form data with `file` field containing image.
+
+## College Discovery
+
+### Get Recommendations
+
+Retrieve personalized college recommendations.
+
+```
+POST /v2/recommendations
+```
+
+#### Request Body
+
+```json
+{
+  "limit": 20,
+  "offset": 0,
+  "filters": {
+    "exclude_seen": true,
+    "min_match_score": 0.7
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "schools": [
+    {
+      "id": "school_123",
+      "name": "Example University",
+      "location": {
+        "city": "Boston",
+        "state": "MA"
+      },
+      "images": [
+        "https://storage.findu.app/schools/123/hero.jpg"
+      ],
+      "quick_stats": {
+        "acceptance_rate": "15%",
+        "total_enrollment": "12,000",
+        "tuition": "$55,000"
+      },
+      "match": {
+        "score": 0.875,
+        "grade": "A",
+        "reasons": [
+          "Strong CS program matches your interests",
+          "Urban location preference",
+          "Within your academic range"
+        ]
+      }
+    }
+  ],
+  "has_more": true,
+  "algorithm_phase": "refinement"
+}
+```
+
+### Record Swipe
+
+Record user interaction with a school.
+
+```
+POST /v2/swipe
+```
+
+#### Request Body
+
+```json
+{
+  "school_id": "school_123",
+  "action": "like",
+  "time_spent": 12.5,
+  "sections_viewed": ["overview", "academics", "campus_life"]
+}
+```
+
+#### Response
+
+```json
+{
+  "recorded": true,
+  "total_swipes": 67,
+  "learning_message": "Getting better at finding your matches!"
+}
+```
+
+### Get School Details
+
+Get comprehensive information about a school.
+
+```
+GET /v2/schools/{school_id}
+```
+
+#### Response
+
+```json
+{
+  "school": {
+    "id": "school_123",
+    "name": "Example University",
+    "description": "A leading research university...",
+    "location": {
+      "address": "123 University Ave",
+      "city": "Boston",
+      "state": "MA",
+      "zip": "02134",
+      "coordinates": {
+        "lat": 42.3601,
+        "lng": -71.0589
+      }
+    },
+    "stats": {
+      "acceptance_rate": 0.15,
+      "total_enrollment": 12000,
+      "undergraduate_enrollment": 8000,
+      "student_faculty_ratio": "8:1",
+      "tuition_in_state": 55000,
+      "tuition_out_of_state": 55000,
+      "room_and_board": 18000
+    },
+    "academics": {
+      "popular_majors": [
+        "Computer Science",
+        "Engineering",
+        "Business"
+      ],
+      "sat_range": {
+        "low": 1460,
+        "high": 1580
+      },
+      "act_range": {
+        "low": 33,
+        "high": 35
+      }
+    },
+    "campus_life": {
+      "housing": "Guaranteed for all 4 years",
+      "greek_life": "25% participation",
+      "athletics": "Division I",
+      "clubs": 450
+    },
+    "media": {
+      "images": [
+        {
+          "url": "https://storage.findu.app/...",
+          "caption": "Main campus quad",
+          "type": "hero"
+        }
+      ],
+      "virtual_tour_url": "https://example.edu/tour"
+    }
+  }
+}
+```
+
+### Save/Unsave School
+
+Add or remove a school from saved list.
+
+```
+POST /v2/schools/{school_id}/save
+DELETE /v2/schools/{school_id}/save
+```
+
+## Messaging
+
+### Get Conversations
+
+List all conversations.
+
+```
+GET /v2/conversations
+```
+
+#### Response
+
+```json
+{
+  "conversations": [
+    {
+      "id": "conv_123",
+      "school": {
+        "id": "school_123",
+        "name": "Example University",
+        "logo_url": "https://..."
+      },
+      "last_message": {
+        "id": "msg_456",
+        "text": "Thanks for your interest!",
+        "sender_type": "school",
+        "timestamp": "2024-01-15T10:30:00Z"
+      },
+      "unread_count": 0,
+      "participant": {
+        "name": "Admissions Office",
+        "avatar_url": "https://..."
+      }
+    }
+  ]
+}
+```
+
+### Get Messages
+
+Retrieve messages for a conversation.
+
+```
+GET /v2/conversations/{conversation_id}/messages
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| limit | integer | Messages per page (default: 50) |
+| before | string | Message ID for pagination |
+
+#### Response
+
+```json
+{
+  "messages": [
+    {
+      "id": "msg_789",
+      "conversation_id": "conv_123",
+      "text": "Hi! I saw you're interested in our CS program.",
+      "sender_type": "school",
+      "sender": {
+        "name": "Sarah Johnson",
+        "title": "Admissions Counselor"
+      },
+      "timestamp": "2024-01-15T10:25:00Z",
+      "read": true
+    }
+  ],
+  "has_more": true
+}
+```
+
+### Send Message
+
+Send a message in a conversation.
+
+```
+POST /v2/conversations/{conversation_id}/messages
+```
+
+#### Request Body
+
+```json
+{
+  "text": "Yes, I'm very interested! Can you tell me more about research opportunities?",
+  "attachments": []
+}
+```
+
+### Mark as Read
+
+Mark messages as read.
+
+```
+POST /v2/conversations/{conversation_id}/read
+```
+
+#### Request Body
+
+```json
+{
+  "message_ids": ["msg_123", "msg_456"]
+}
+```
+
+## AI Advisor
+
+### Ask Question
+
+Get guidance from the AI college advisor.
+
+```
+POST /v2/advisor/ask
+```
+
+#### Request Body
+
+```json
+{
+  "question": "What should I look for when visiting colleges?",
+  "context": {
+    "current_screen": "college_details",
+    "school_id": "school_123"
+  }
+}
+```
+
+#### Response
+
+```json
+{
+  "answer": "When visiting colleges, here are key things to look for:\n\n1. **Campus Vibe**: Do students seem happy and engaged?\n2. **Facilities**: Check out dorms, dining halls, and study spaces\n3. **Classes**: Try to sit in on a class in your intended major\n4. **Location**: Explore the surrounding area\n5. **Questions to Ask**: Prepare specific questions about programs, support services, and student life\n\nWould you like me to create a personalized visit checklist for Example University?",
+  "follow_up_suggestions": [
+    "Create visit checklist",
+    "Questions to ask tour guides",
+    "How to schedule visits"
+  ]
+}
+```
+
+## Scholarships
+
+### Browse Scholarships
+
+Get available scholarships.
+
+```
+GET /v2/scholarships
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| school_id | string | Filter by school |
+| min_amount | integer | Minimum award amount |
+| tags | array | Filter by tags |
+
+#### Response
+
+```json
+{
+  "scholarships": [
+    {
+      "id": "schol_123",
+      "school": {
+        "id": "school_123",
+        "name": "Example University"
+      },
+      "name": "Merit Excellence Award",
+      "amount": "$10,000",
+      "description": "For outstanding academic achievement",
+      "requirements": {
+        "min_gpa": 3.5,
+        "test_scores": "Optional",
+        "essay": true
+      },
+      "deadline": "2024-03-15",
+      "saved": false,
+      "tags": ["merit", "renewable"]
+    }
+  ]
+}
+```
+
+### Save Scholarship
+
+Save a scholarship for later.
+
+```
+POST /v2/scholarships/{scholarship_id}/save
+```
+
+## Social Features
+
+### Add Friend
+
+Connect with another student.
+
+```
+POST /v2/friends/add
+```
+
+#### Request Body
+
+```json
+{
+  "user_id": "user_456"
+}
+```
+
+### Get Friends
+
+List connected friends.
+
+```
+GET /v2/friends
+```
+
+#### Response
+
+```json
+{
+  "friends": [
+    {
+      "id": "user_456",
+      "name": "Jane Smith",
+      "avatar_url": "https://...",
+      "school_interests": [
+        "MIT",
+        "Stanford",
+        "UC Berkeley"
+      ],
+      "mutual_schools": 3
+    }
+  ]
+}
+```
+
+### Share Profile
+
+Generate a shareable profile link.
+
+```
+POST /v2/profile/share
+```
+
+#### Response
+
+```json
+{
+  "share_url": "https://findu.app/s/abc123",
+  "expires_at": "2024-02-15T10:30:00Z"
+}
+```
+
+## Push Notifications
+
+### Register Device
+
+Register device for push notifications.
+
+```
+POST /v2/devices
+```
+
+#### Request Body
+
+```json
+{
+  "token": "APNS_DEVICE_TOKEN",
+  "platform": "ios",
+  "app_version": "1.2.0"
+}
+```
+
+### Update Preferences
+
+Configure notification preferences.
+
+```
+PATCH /v2/notifications/preferences
+```
+
+#### Request Body
+
+```json
+{
+  "messages": true,
+  "scholarships": true,
+  "reminders": true,
+  "marketing": false
+}
+```
+
+## Error Responses
+
+### Standard Error Format
+
+```json
+{
+  "error": {
+    "code": "PROFILE_INCOMPLETE",
+    "message": "Please complete your profile to access this feature",
+    "details": {
+      "missing_fields": ["gpa", "test_scores"]
+    }
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| UNAUTHORIZED | Invalid or expired token |
+| PROFILE_INCOMPLETE | Missing required profile data |
+| SCHOOL_NOT_FOUND | Invalid school ID |
+| RATE_LIMITED | Too many requests |
+| VALIDATION_ERROR | Invalid request data |
+
+## Rate Limits
+
+| Endpoint | Limit |
+|----------|-------|
+| Recommendations | 60/minute |
+| Swipes | 300/minute |
+| Messages | 60/minute |
+| Profile Updates | 20/minute |
+
+## iOS SDK Integration
+
+### Swift Example
+
+```swift
+import FindUSDK
+
+class CollegeService {
+    let client = FindUClient.shared
+    
+    func loadRecommendations() async throws -> [School] {
+        let response = try await client.recommendations.fetch(
+            limit: 20,
+            excludeSeen: true
+        )
+        return response.schools
+    }
+    
+    func recordSwipe(schoolId: String, liked: Bool) async throws {
+        try await client.interactions.swipe(
+            schoolId: schoolId,
+            action: liked ? .like : .dislike,
+            timeSpent: 10.5
+        )
+    }
+}
+```

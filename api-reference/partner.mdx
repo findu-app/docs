@@ -1,0 +1,560 @@
+---
+title: "Partner Dashboard API"
+description: "API endpoints for school and partner dashboard features"
+icon: "chart-line"
+---
+
+# Partner Dashboard API
+
+The Partner Dashboard API enables schools, counselors, and partner organizations to manage their presence on FindU and engage with prospective students.
+
+## Authentication
+
+All endpoints require JWT authentication with appropriate partner permissions:
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+X-Entity-ID: YOUR_ENTITY_ID
+```
+
+## Analytics Endpoints
+
+### Get Dashboard Metrics
+
+Retrieve analytics data for your institution.
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.findu.app/v2/partner/analytics?period=30d" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "X-Entity-ID: YOUR_ENTITY_ID"
+```
+
+```javascript JavaScript
+const analytics = await fetch('https://api.findu.app/v2/partner/analytics?period=30d', {
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'X-Entity-ID': 'YOUR_ENTITY_ID'
+  }
+});
+
+const data = await analytics.json();
+```
+</CodeGroup>
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| period | string | Time period: "7d", "30d", "3m", "1y" |
+| metric | string | Specific metric to retrieve |
+
+#### Response
+
+```json
+{
+  "overview": {
+    "total_views": 4521,
+    "unique_students": 1847,
+    "engagement_rate": 0.324,
+    "message_count": 156
+  },
+  "trends": {
+    "daily": [
+      {
+        "date": "2024-01-15",
+        "views": 145,
+        "likes": 42,
+        "messages": 8
+      }
+    ]
+  },
+  "geography": {
+    "states": {
+      "CA": 234,
+      "TX": 189,
+      "NY": 167
+    }
+  },
+  "student_quality": {
+    "avg_gpa": 3.67,
+    "avg_sat": 1340,
+    "match_score_distribution": {
+      "A": 0.34,
+      "B": 0.45,
+      "C": 0.21
+    }
+  }
+}
+```
+
+### Export Campaign Data
+
+Export detailed student interaction data.
+
+```
+POST /v2/partner/campaigns/{campaign_id}/export
+```
+
+#### Request Body
+
+```json
+{
+  "format": "csv",
+  "fields": ["name", "gpa", "test_scores", "interaction_date", "match_score"],
+  "filters": {
+    "interaction_type": ["view", "like"],
+    "date_range": {
+      "start": "2024-01-01",
+      "end": "2024-01-31"
+    }
+  }
+}
+```
+
+## Student Management
+
+### List Campaign Students
+
+Get students who have interacted with your institution.
+
+```
+GET /v2/partner/campaigns/{campaign_id}/students
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| page | integer | Page number (default: 1) |
+| limit | integer | Results per page (max: 100) |
+| sort | string | Sort by: "recent", "match_score", "gpa" |
+| filter | object | Filter criteria |
+
+#### Response
+
+```json
+{
+  "students": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "John Doe",
+      "graduation_year": "2024",
+      "location": {
+        "city": "San Francisco",
+        "state": "CA"
+      },
+      "academic": {
+        "gpa": 3.8,
+        "sat": 1420,
+        "act": 32
+      },
+      "interaction": {
+        "type": "like",
+        "date": "2024-01-15T10:30:00Z",
+        "match_score": 0.87,
+        "match_grade": "A"
+      }
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 50,
+    "total": 347,
+    "has_more": true
+  }
+}
+```
+
+### Get Student Profile
+
+Retrieve detailed information about a specific student.
+
+```
+GET /v2/partner/students/{student_id}
+```
+
+#### Response
+
+```json
+{
+  "student": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "profile": {
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "phone": "+1234567890",
+      "graduation_year": "2024"
+    },
+    "academic": {
+      "gpa": 3.8,
+      "weighted_gpa": 4.2,
+      "sat": 1420,
+      "act": 32,
+      "ap_classes": 6,
+      "class_rank": "Top 10%"
+    },
+    "preferences": {
+      "majors": ["Computer Science", "Engineering"],
+      "school_size": "medium",
+      "location_preferences": ["urban", "suburban"],
+      "distance_from_home": "anywhere"
+    },
+    "interactions": [
+      {
+        "date": "2024-01-15T10:30:00Z",
+        "type": "view",
+        "duration": 45
+      },
+      {
+        "date": "2024-01-15T10:31:00Z",
+        "type": "like"
+      }
+    ]
+  }
+}
+```
+
+## Messaging
+
+### Send Message
+
+Send a message to one or more students.
+
+```
+POST /v2/partner/messages
+```
+
+#### Request Body
+
+```json
+{
+  "recipient_ids": ["student_id_1", "student_id_2"],
+  "message": {
+    "subject": "Scholarship Opportunity",
+    "body": "Hi! We noticed you're interested in our engineering program...",
+    "attachments": [
+      {
+        "type": "link",
+        "url": "https://example.edu/scholarships",
+        "title": "Learn More"
+      }
+    ]
+  },
+  "metadata": {
+    "campaign_id": "spring_2024",
+    "template": "scholarship_outreach"
+  }
+}
+```
+
+### List Conversations
+
+Get all active conversations.
+
+```
+GET /v2/partner/conversations
+```
+
+#### Response
+
+```json
+{
+  "conversations": [
+    {
+      "id": "conv_123",
+      "student": {
+        "id": "student_123",
+        "name": "Jane Smith",
+        "avatar_url": "https://..."
+      },
+      "last_message": {
+        "text": "Thanks for the information!",
+        "timestamp": "2024-01-15T14:30:00Z",
+        "sender": "student"
+      },
+      "unread_count": 2,
+      "status": "active"
+    }
+  ]
+}
+```
+
+## Profile Management
+
+### Update Partner Profile
+
+Update your institution's profile information.
+
+```
+PATCH /v2/partner/profile
+```
+
+#### Request Body
+
+```json
+{
+  "sections": [
+    {
+      "id": "section_123",
+      "type": "hero",
+      "content": {
+        "title": "Welcome to Example University",
+        "subtitle": "Where innovation meets tradition",
+        "image_url": "https://..."
+      }
+    },
+    {
+      "type": "statistics",
+      "content": {
+        "stats": [
+          {
+            "label": "Student-Faculty Ratio",
+            "value": "8:1"
+          },
+          {
+            "label": "Average Class Size",
+            "value": "20"
+          }
+        ]
+      }
+    }
+  ],
+  "tags": ["research_university", "liberal_arts", "stem_focused"]
+}
+```
+
+### Upload Media
+
+Upload images or videos for your profile.
+
+```
+POST /v2/partner/media
+```
+
+#### Request
+
+Multipart form data with:
+- `file`: The media file
+- `type`: "image" or "video"
+- `caption`: Optional description
+
+#### Response
+
+```json
+{
+  "media": {
+    "id": "media_123",
+    "url": "https://storage.findu.app/...",
+    "thumbnail_url": "https://storage.findu.app/...",
+    "type": "image",
+    "caption": "Campus aerial view"
+  }
+}
+```
+
+## Scholarship Management
+
+### Create Scholarship
+
+Add a new scholarship opportunity.
+
+```
+POST /v2/partner/scholarships
+```
+
+#### Request Body
+
+```json
+{
+  "name": "Excellence in STEM Scholarship",
+  "amount": "$10,000",
+  "description": "For students pursuing STEM fields...",
+  "requirements": {
+    "min_gpa": 3.5,
+    "majors": ["Engineering", "Computer Science", "Mathematics"],
+    "essay_required": true
+  },
+  "deadline": "2024-03-15",
+  "renewable": true,
+  "tags": ["merit", "stem", "need_based"]
+}
+```
+
+### Get Scholarship Analytics
+
+Track scholarship engagement.
+
+```
+GET /v2/partner/scholarships/{scholarship_id}/analytics
+```
+
+#### Response
+
+```json
+{
+  "scholarship": {
+    "id": "schol_123",
+    "name": "Excellence in STEM Scholarship"
+  },
+  "metrics": {
+    "total_views": 1234,
+    "unique_viewers": 867,
+    "saves": 234,
+    "applications_started": 89,
+    "applications_completed": 67
+  },
+  "student_breakdown": {
+    "by_gpa": {
+      "3.5-3.7": 23,
+      "3.7-3.9": 31,
+      "3.9-4.0": 13
+    },
+    "by_major": {
+      "Engineering": 34,
+      "Computer Science": 28,
+      "Mathematics": 5
+    }
+  }
+}
+```
+
+## Team Management
+
+### Invite Team Member
+
+Add a new user to your partner account.
+
+```
+POST /v2/partner/team/invite
+```
+
+#### Request Body
+
+```json
+{
+  "email": "colleague@example.edu",
+  "role": "counselor",
+  "entities": ["entity_123", "entity_456"],
+  "permissions": {
+    "can_message": true,
+    "can_view_analytics": true,
+    "can_manage_profile": false
+  }
+}
+```
+
+### Update Member Permissions
+
+Modify team member access.
+
+```
+PATCH /v2/partner/team/members/{member_id}
+```
+
+#### Request Body
+
+```json
+{
+  "role": "admin",
+  "entities": ["entity_123"],
+  "permissions": {
+    "can_message": true,
+    "can_view_analytics": true,
+    "can_manage_profile": true,
+    "can_invite_members": true
+  }
+}
+```
+
+## Webhooks
+
+### Register Webhook
+
+Set up webhooks for real-time events.
+
+```
+POST /v2/partner/webhooks
+```
+
+#### Request Body
+
+```json
+{
+  "url": "https://example.edu/webhooks/findu",
+  "events": ["student.liked", "message.received", "student.viewed"],
+  "secret": "webhook_secret_key"
+}
+```
+
+### Webhook Events
+
+| Event | Description |
+|-------|-------------|
+| student.viewed | Student viewed your profile |
+| student.liked | Student liked your school |
+| message.received | New message from student |
+| scholarship.saved | Student saved scholarship |
+
+#### Event Payload
+
+```json
+{
+  "event": "student.liked",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "data": {
+    "student_id": "123e4567-e89b-12d3-a456-426614174000",
+    "entity_id": "entity_123",
+    "metadata": {
+      "match_score": 0.87,
+      "source": "swiping"
+    }
+  }
+}
+```
+
+## Rate Limits
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| Analytics | 100/minute |
+| Messaging | 60/minute |
+| Profile Updates | 20/minute |
+| Exports | 5/minute |
+
+## Error Handling
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests",
+    "retry_after": 30
+  }
+}
+```
+
+## SDKs
+
+### JavaScript/TypeScript
+
+```typescript
+import { FindUPartnerClient } from '@findu/partner-sdk';
+
+const client = new FindUPartnerClient({
+  apiKey: 'YOUR_API_KEY',
+  entityId: 'YOUR_ENTITY_ID'
+});
+
+// Get analytics
+const analytics = await client.analytics.getDashboard({ period: '30d' });
+
+// Send message
+await client.messaging.send({
+  recipientIds: ['student_123'],
+  message: {
+    subject: 'Welcome!',
+    body: 'Thanks for your interest...'
+  }
+});
+```

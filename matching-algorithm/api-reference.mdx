@@ -1,0 +1,417 @@
+---
+title: "Matching API Reference"
+description: "Complete API documentation for the FindU matching algorithm"
+icon: "webhook"
+---
+
+# Matching Algorithm API Reference
+
+The FindU matching API provides personalized college recommendations and manages student-school interactions.
+
+## Base URL
+
+```
+Production: https://findu-matching-production.up.railway.app
+Development: https://findu-matching-development.up.railway.app
+```
+
+## Authentication
+
+All endpoints require a valid Supabase JWT token:
+
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
+```
+
+## Endpoints
+
+### Get Recommendations
+
+Retrieve personalized college recommendations for a student.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.findu.app/recommendations \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "student_id": "123e4567-e89b-12d3-a456-426614174000",
+    "limit": 20,
+    "offset": 0
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.findu.app/recommendations', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    student_id: '123e4567-e89b-12d3-a456-426614174000',
+    limit: 20,
+    offset: 0
+  })
+});
+
+const recommendations = await response.json();
+```
+
+```swift Swift
+let url = URL(string: "https://api.findu.app/recommendations")!
+var request = URLRequest(url: url)
+request.httpMethod = "POST"
+request.setValue("Bearer YOUR_JWT_TOKEN", forHTTPHeaderField: "Authorization")
+request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+let body = [
+    "student_id": "123e4567-e89b-12d3-a456-426614174000",
+    "limit": 20,
+    "offset": 0
+] as [String : Any]
+
+request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+let (data, _) = try await URLSession.shared.data(for: request)
+let recommendations = try JSONDecoder().decode([School].self, from: data)
+```
+</CodeGroup>
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| student_id | string | Yes | UUID of the student |
+| limit | integer | No | Number of recommendations (default: 20) |
+| offset | integer | No | Pagination offset (default: 0) |
+
+#### Response
+
+```json
+{
+  "recommendations": [
+    {
+      "school_id": "456e7890-e89b-12d3-a456-426614174000",
+      "name": "Example University",
+      "match_score": 0.875,
+      "match_grade": "A",
+      "match_reasons": [
+        "Strong academic fit",
+        "Within your budget",
+        "Preferred location"
+      ],
+      "components": {
+        "academic": 0.92,
+        "financial": 0.85,
+        "campus": 0.88,
+        "outcomes": 0.82
+      }
+    }
+  ],
+  "metadata": {
+    "total_count": 150,
+    "learning_phase": "refinement",
+    "algorithm_version": "2.1.0"
+  }
+}
+```
+
+### Record Swipe
+
+Record a student's interaction with a school recommendation.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.findu.app/swipe \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "student_id": "123e4567-e89b-12d3-a456-426614174000",
+    "school_id": "456e7890-e89b-12d3-a456-426614174000",
+    "direction": "right",
+    "interaction_type": "swipe",
+    "time_spent": 5.2
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://api.findu.app/swipe', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    student_id: '123e4567-e89b-12d3-a456-426614174000',
+    school_id: '456e7890-e89b-12d3-a456-426614174000',
+    direction: 'right',
+    interaction_type: 'swipe',
+    time_spent: 5.2
+  })
+});
+```
+</CodeGroup>
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| student_id | string | Yes | UUID of the student |
+| school_id | string | Yes | UUID of the school |
+| direction | string | Yes | "left" (dislike) or "right" (like) |
+| interaction_type | string | No | Type of interaction (default: "swipe") |
+| time_spent | float | No | Seconds spent viewing |
+
+#### Response
+
+```json
+{
+  "success": true,
+  "swipe_count": 25,
+  "learning_phase": "refinement",
+  "ui_message": "Getting better at finding your matches!"
+}
+```
+
+### Get Match Details
+
+Get detailed match information between a student and school.
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api.findu.app/match/123e4567-e89b-12d3-a456-426614174000/456e7890-e89b-12d3-a456-426614174000" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+</CodeGroup>
+
+#### Response
+
+```json
+{
+  "overall_score": 0.875,
+  "grade": "A",
+  "components": {
+    "academic": {
+      "score": 0.92,
+      "factors": {
+        "sat_match": 0.95,
+        "selectivity_fit": 0.88,
+        "program_strength": 0.93
+      }
+    },
+    "financial": {
+      "score": 0.85,
+      "factors": {
+        "affordability": 0.82,
+        "aid_availability": 0.90,
+        "value_score": 0.83
+      }
+    }
+  },
+  "explanation": "This school is an excellent match based on your academic profile and preferences. The strong engineering program aligns with your interests, and the financial aid package makes it affordable."
+}
+```
+
+## Mobile-Optimized Endpoints
+
+### Compressed Recommendations
+
+Get recommendations with compressed field names for mobile.
+
+```
+GET /m/recommendations/{student_id}
+```
+
+#### Response
+
+```json
+{
+  "r": [
+    {
+      "i": "456e7890-e89b-12d3-a456-426614174000",
+      "n": "Example University",
+      "s": 87.5,
+      "g": "A",
+      "c": "Example City",
+      "st": "CA"
+    }
+  ]
+}
+```
+
+Field mappings:
+- `i` = id
+- `n` = name
+- `s` = score
+- `g` = grade
+- `c` = city
+- `st` = state
+
+### Batch School Fetch
+
+Fetch multiple schools in one request.
+
+```
+POST /m/batch/schools
+```
+
+#### Request Body
+
+```json
+{
+  "school_ids": [
+    "456e7890-e89b-12d3-a456-426614174000",
+    "789a1234-e89b-12d3-a456-426614174000"
+  ]
+}
+```
+
+## Minimal Onboarding API
+
+### Create Minimal Profile
+
+Create a student profile with minimal information.
+
+```
+POST /v2/onboarding/minimal
+```
+
+#### Request Body
+
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "graduation_year": "2024",
+  "gpa": 3.8,
+  "test_scores": {
+    "sat": 1400
+  }
+}
+```
+
+### Get Category Schools
+
+Get the 6 archetype schools for preference discovery.
+
+```
+GET /v2/onboarding/category-schools
+```
+
+#### Response
+
+```json
+{
+  "categories": [
+    {
+      "id": "ivy-plus",
+      "name": "Ivy Plus",
+      "description": "Highly selective research universities",
+      "example_school": {
+        "name": "Harvard University",
+        "image_url": "https://..."
+      }
+    }
+  ]
+}
+```
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "INVALID_STUDENT_ID",
+    "message": "Student not found",
+    "details": {
+      "student_id": "123e4567-e89b-12d3-a456-426614174000"
+    }
+  }
+}
+```
+
+### Common Error Codes
+
+| Code | Description |
+|------|-------------|
+| INVALID_STUDENT_ID | Student ID not found |
+| INVALID_SCHOOL_ID | School ID not found |
+| MISSING_PROFILE | Student profile incomplete |
+| RATE_LIMITED | Too many requests |
+| INTERNAL_ERROR | Server error |
+
+## Rate Limiting
+
+- **Recommendations**: 60 requests per minute
+- **Swipes**: 300 requests per minute
+- **Batch operations**: 20 requests per minute
+
+Headers:
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1640995200
+```
+
+## Webhooks
+
+### Swipe Events
+
+Configure webhooks to receive swipe events:
+
+```json
+{
+  "event": "swipe.recorded",
+  "data": {
+    "student_id": "123e4567-e89b-12d3-a456-426614174000",
+    "school_id": "456e7890-e89b-12d3-a456-426614174000",
+    "direction": "right",
+    "timestamp": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+## SDK Examples
+
+### Python
+```python
+from findu import MatchingClient
+
+client = MatchingClient(api_key="YOUR_API_KEY")
+
+# Get recommendations
+recs = client.get_recommendations(
+    student_id="123e4567-e89b-12d3-a456-426614174000",
+    limit=20
+)
+
+# Record swipe
+client.record_swipe(
+    student_id="123e4567-e89b-12d3-a456-426614174000",
+    school_id="456e7890-e89b-12d3-a456-426614174000",
+    direction="right"
+)
+```
+
+### TypeScript
+```typescript
+import { FindUClient } from '@findu/sdk';
+
+const client = new FindUClient({ apiKey: 'YOUR_API_KEY' });
+
+// Get recommendations
+const recs = await client.recommendations.get({
+  studentId: '123e4567-e89b-12d3-a456-426614174000',
+  limit: 20
+});
+
+// Record swipe
+await client.swipes.record({
+  studentId: '123e4567-e89b-12d3-a456-426614174000',
+  schoolId: '456e7890-e89b-12d3-a456-426614174000',
+  direction: 'right'
+});
+```

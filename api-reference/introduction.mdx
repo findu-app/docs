@@ -1,33 +1,172 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Introduction'
+description: 'Overview of FindU APIs and authentication'
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+# FindU API Documentation
 
-## Welcome
+FindU provides several APIs for different parts of the platform. This section covers authentication and general API concepts.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+## Available APIs
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+<CardGroup cols={2}>
+  <Card title="Matching Algorithm API" icon="brain" href="/matching-algorithm/api-reference">
+    Personalized college recommendations and interaction tracking
+  </Card>
+  
+  <Card title="Partner Dashboard API" icon="chart-line" href="/api-reference/partner">
+    Analytics, messaging, and partner management endpoints
+  </Card>
+  
+  <Card title="Student App API" icon="mobile" href="/api-reference/student">
+    Authentication, profiles, and student features
+  </Card>
+  
+  <Card title="Admin API" icon="shield" href="/api-reference/admin">
+    Internal tools and platform management
+  </Card>
+</CardGroup>
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All FindU APIs use JWT tokens from Supabase Auth:
 
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
+```bash
+Authorization: Bearer YOUR_JWT_TOKEN
 ```
+
+### Obtaining Tokens
+
+#### Web Applications
+```javascript
+import { supabase } from '@/lib/supabase'
+
+// Get current session
+const { data: { session } } = await supabase.auth.getSession()
+const token = session?.access_token
+
+// Use in API calls
+fetch('https://api.findu.app/endpoint', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+})
+```
+
+#### iOS Applications
+```swift
+import Supabase
+
+// Get current session
+let session = try await supabase.auth.session
+let token = session.accessToken
+
+// Use in API calls
+var request = URLRequest(url: url)
+request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+```
+
+## Base URLs
+
+| Environment | URL |
+|-------------|-----|
+| Production | `https://api.findu.app` |
+| Development | `https://api-dev.findu.app` |
+| Local | `http://localhost:8000` |
+
+## Common Headers
+
+```bash
+Content-Type: application/json
+Authorization: Bearer YOUR_JWT_TOKEN
+X-Client-Version: 1.0.0
+```
+
+## Response Format
+
+All API responses follow a consistent format:
+
+### Success Response
+```json
+{
+  "data": {
+    // Response data
+  },
+  "metadata": {
+    "timestamp": "2024-01-15T10:30:00Z",
+    "version": "1.0.0"
+  }
+}
+```
+
+### Error Response
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {
+      // Additional error context
+    }
+  }
+}
+```
+
+## Rate Limiting
+
+API rate limits vary by endpoint type:
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| Read operations | 300/minute |
+| Write operations | 60/minute |
+| Analytics | 100/minute |
+| Batch operations | 20/minute |
+
+Rate limit headers:
+```
+X-RateLimit-Limit: 300
+X-RateLimit-Remaining: 250
+X-RateLimit-Reset: 1640995200
+```
+
+## Pagination
+
+List endpoints support pagination:
+
+```bash
+GET /api/students?limit=20&offset=40
+```
+
+Response includes pagination metadata:
+```json
+{
+  "data": [...],
+  "pagination": {
+    "total": 150,
+    "limit": 20,
+    "offset": 40,
+    "has_more": true
+  }
+}
+```
+
+## Versioning
+
+API versions are specified in the URL path:
+- Current: `/v2/endpoint`
+- Legacy: `/v1/endpoint` (deprecated)
+
+## SDKs
+
+Official SDKs are available:
+- [JavaScript/TypeScript](https://github.com/findu-app/js-sdk)
+- [Swift](https://github.com/findu-app/swift-sdk)
+- [Python](https://github.com/findu-app/python-sdk)
+
+## Next Steps
+
+Explore the specific API documentation:
+- [Matching Algorithm API](/matching-algorithm/api-reference)
+- [Partner Dashboard API](/api-reference/partner)
+- [Student App API](/api-reference/student)

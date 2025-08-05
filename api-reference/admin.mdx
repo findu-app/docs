@@ -1,0 +1,640 @@
+---
+title: "Admin API"
+description: "Internal API endpoints for platform administration"
+icon: "shield"
+---
+
+# Admin API
+
+The Admin API provides internal tools for FindU staff to manage the platform, monitor system health, and support users.
+
+<Warning>
+These endpoints are restricted to FindU staff members with admin privileges. Unauthorized access will be logged and investigated.
+</Warning>
+
+## Authentication
+
+Admin endpoints require staff JWT tokens with admin scope:
+
+```bash
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN
+X-Admin-Key: YOUR_ADMIN_API_KEY
+```
+
+## Platform Management
+
+### System Health Check
+
+Monitor system status and component health.
+
+```
+GET /v2/admin/health
+```
+
+#### Response
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "components": {
+    "database": {
+      "status": "healthy",
+      "latency_ms": 12,
+      "connections": {
+        "active": 45,
+        "idle": 155,
+        "max": 200
+      }
+    },
+    "matching_service": {
+      "status": "healthy",
+      "version": "2.1.0",
+      "uptime_hours": 168,
+      "requests_per_minute": 234
+    },
+    "storage": {
+      "status": "healthy",
+      "usage_gb": 1245,
+      "limit_gb": 5000
+    },
+    "cache": {
+      "status": "healthy",
+      "hit_rate": 0.87,
+      "memory_mb": 2048
+    }
+  }
+}
+```
+
+### Platform Statistics
+
+Get platform-wide metrics.
+
+```
+GET /v2/admin/stats
+```
+
+#### Response
+
+```json
+{
+  "users": {
+    "total_students": 45678,
+    "active_last_30d": 23456,
+    "new_last_7d": 1234,
+    "profile_completion_avg": 0.78
+  },
+  "partners": {
+    "total_schools": 1234,
+    "total_organizations": 567,
+    "active_counselors": 890
+  },
+  "engagement": {
+    "daily_swipes": 123456,
+    "daily_messages": 12345,
+    "avg_session_minutes": 18.5
+  },
+  "matching": {
+    "avg_match_score": 0.72,
+    "recommendations_served_today": 234567,
+    "learning_phase_distribution": {
+      "discovery": 0.15,
+      "refinement": 0.35,
+      "stable": 0.50
+    }
+  }
+}
+```
+
+## User Management
+
+### Search Users
+
+Search for students or partners.
+
+```
+POST /v2/admin/users/search
+```
+
+#### Request Body
+
+```json
+{
+  "query": "john.doe@example.com",
+  "type": "student",
+  "filters": {
+    "created_after": "2024-01-01",
+    "has_profile": true
+  },
+  "limit": 50
+}
+```
+
+#### Response
+
+```json
+{
+  "users": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "email": "john.doe@example.com",
+      "type": "student",
+      "created_at": "2024-01-10T08:00:00Z",
+      "profile": {
+        "name": "John Doe",
+        "graduation_year": "2024",
+        "school_count": 45
+      },
+      "status": {
+        "active": true,
+        "last_login": "2024-01-15T09:00:00Z",
+        "flags": []
+      }
+    }
+  ]
+}
+```
+
+### Get User Details
+
+Retrieve comprehensive user information.
+
+```
+GET /v2/admin/users/{user_id}
+```
+
+#### Response
+
+```json
+{
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "account": {
+      "email": "john.doe@example.com",
+      "phone": "+1234567890",
+      "created_at": "2024-01-10T08:00:00Z",
+      "auth_providers": ["apple", "email"]
+    },
+    "activity": {
+      "last_login": "2024-01-15T09:00:00Z",
+      "total_sessions": 67,
+      "total_swipes": 234,
+      "messages_sent": 45
+    },
+    "support_history": [
+      {
+        "ticket_id": "SUPP-123",
+        "date": "2024-01-12",
+        "issue": "Password reset",
+        "resolved": true
+      }
+    ]
+  }
+}
+```
+
+### Suspend/Unsuspend User
+
+Manage user account status.
+
+```
+POST /v2/admin/users/{user_id}/suspend
+POST /v2/admin/users/{user_id}/unsuspend
+```
+
+#### Request Body
+
+```json
+{
+  "reason": "Violation of terms of service",
+  "duration_days": 7,
+  "notify_user": true
+}
+```
+
+### Reset User Data
+
+Clear specific user data for support purposes.
+
+```
+POST /v2/admin/users/{user_id}/reset
+```
+
+#### Request Body
+
+```json
+{
+  "reset_type": "swipe_history",
+  "confirm": true,
+  "reason": "User requested fresh start"
+}
+```
+
+## Partner Management
+
+### List Partner Organizations
+
+Get all partner organizations with filters.
+
+```
+GET /v2/admin/partners
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| type | string | Organization type filter |
+| status | string | active, pending, suspended |
+| search | string | Search term |
+
+#### Response
+
+```json
+{
+  "partners": [
+    {
+      "id": "org_123",
+      "name": "Example University",
+      "type": "university",
+      "status": "active",
+      "entities": [
+        {
+          "id": "entity_123",
+          "name": "Main Campus",
+          "school_id": "school_123"
+        }
+      ],
+      "members": 12,
+      "created_at": "2023-09-01T10:00:00Z",
+      "subscription": {
+        "plan": "premium",
+        "expires_at": "2024-09-01T10:00:00Z"
+      }
+    }
+  ]
+}
+```
+
+### Approve Partner
+
+Approve a pending partner application.
+
+```
+POST /v2/admin/partners/{partner_id}/approve
+```
+
+#### Request Body
+
+```json
+{
+  "approved_by": "admin@findu.app",
+  "notes": "Verified institution credentials",
+  "subscription_plan": "premium"
+}
+```
+
+### Partner Analytics
+
+Get detailed partner platform usage.
+
+```
+GET /v2/admin/partners/{partner_id}/analytics
+```
+
+## Content Moderation
+
+### Review Queue
+
+Get content requiring moderation.
+
+```
+GET /v2/admin/moderation/queue
+```
+
+#### Response
+
+```json
+{
+  "items": [
+    {
+      "id": "mod_123",
+      "type": "message",
+      "content": {
+        "text": "Message content here...",
+        "sender_id": "user_123",
+        "recipient_id": "school_456"
+      },
+      "flags": ["spam", "inappropriate"],
+      "reported_by": ["user_789"],
+      "created_at": "2024-01-15T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Moderate Content
+
+Take action on flagged content.
+
+```
+POST /v2/admin/moderation/{item_id}/action
+```
+
+#### Request Body
+
+```json
+{
+  "action": "remove",
+  "reason": "Spam content",
+  "notify_user": true,
+  "ban_user": false
+}
+```
+
+## School Data Management
+
+### Import School Data
+
+Bulk import or update school information.
+
+```
+POST /v2/admin/schools/import
+```
+
+#### Request Body
+
+```json
+{
+  "source": "scorecard_api",
+  "update_existing": true,
+  "dry_run": false,
+  "schools": [
+    {
+      "external_id": "123456",
+      "name": "New University",
+      "data": {
+        // School data fields
+      }
+    }
+  ]
+}
+```
+
+### Verify School Data
+
+Check and validate school information.
+
+```
+POST /v2/admin/schools/{school_id}/verify
+```
+
+#### Response
+
+```json
+{
+  "school_id": "school_123",
+  "validation_results": {
+    "name_match": true,
+    "location_verified": true,
+    "stats_current": false,
+    "last_updated": "2023-12-01",
+    "issues": [
+      "Enrollment data outdated",
+      "Missing SAT score ranges"
+    ]
+  }
+}
+```
+
+## Financial Operations
+
+### Subscription Management
+
+View and manage partner subscriptions.
+
+```
+GET /v2/admin/subscriptions
+```
+
+#### Response
+
+```json
+{
+  "subscriptions": [
+    {
+      "id": "sub_123",
+      "partner_id": "org_123",
+      "plan": "premium",
+      "status": "active",
+      "amount": 499.00,
+      "currency": "USD",
+      "billing_cycle": "monthly",
+      "next_billing_date": "2024-02-01",
+      "payment_method": "card_****_4242"
+    }
+  ]
+}
+```
+
+### Issue Refund
+
+Process refunds for subscriptions.
+
+```
+POST /v2/admin/subscriptions/{subscription_id}/refund
+```
+
+#### Request Body
+
+```json
+{
+  "amount": 499.00,
+  "reason": "Service issue",
+  "notify_customer": true
+}
+```
+
+## Support Tools
+
+### Create Support Ticket
+
+Create internal support ticket.
+
+```
+POST /v2/admin/support/tickets
+```
+
+#### Request Body
+
+```json
+{
+  "user_id": "user_123",
+  "type": "technical",
+  "priority": "high",
+  "subject": "Unable to access messages",
+  "description": "User reports messages not loading...",
+  "assigned_to": "support_team"
+}
+```
+
+### Send System Message
+
+Send important announcements to users.
+
+```
+POST /v2/admin/messages/broadcast
+```
+
+#### Request Body
+
+```json
+{
+  "recipients": {
+    "type": "segment",
+    "criteria": {
+      "user_type": "student",
+      "active_last_days": 30
+    }
+  },
+  "message": {
+    "title": "New Features Available!",
+    "body": "Check out our new scholarship search...",
+    "action": {
+      "type": "deep_link",
+      "url": "findu://scholarships"
+    }
+  },
+  "delivery": {
+    "push": true,
+    "in_app": true,
+    "email": false
+  }
+}
+```
+
+## Monitoring & Alerts
+
+### Get System Alerts
+
+View current system alerts and incidents.
+
+```
+GET /v2/admin/alerts
+```
+
+#### Response
+
+```json
+{
+  "alerts": [
+    {
+      "id": "alert_123",
+      "severity": "warning",
+      "type": "performance",
+      "message": "High API latency detected",
+      "details": {
+        "endpoint": "/recommendations",
+        "avg_latency_ms": 2500,
+        "threshold_ms": 1000
+      },
+      "started_at": "2024-01-15T10:00:00Z",
+      "acknowledged": false
+    }
+  ]
+}
+```
+
+### Acknowledge Alert
+
+Mark an alert as acknowledged.
+
+```
+POST /v2/admin/alerts/{alert_id}/acknowledge
+```
+
+## Audit Logs
+
+### Search Audit Logs
+
+Query system audit logs.
+
+```
+POST /v2/admin/audit/search
+```
+
+#### Request Body
+
+```json
+{
+  "filters": {
+    "user_id": "admin_123",
+    "action_type": "user_suspend",
+    "date_range": {
+      "start": "2024-01-01",
+      "end": "2024-01-31"
+    }
+  },
+  "limit": 100
+}
+```
+
+#### Response
+
+```json
+{
+  "logs": [
+    {
+      "id": "log_123",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "user": {
+        "id": "admin_123",
+        "email": "admin@findu.app"
+      },
+      "action": "user_suspend",
+      "target": {
+        "type": "user",
+        "id": "user_456"
+      },
+      "details": {
+        "reason": "Terms violation",
+        "duration_days": 7
+      },
+      "ip_address": "192.168.1.1",
+      "user_agent": "Mozilla/5.0..."
+    }
+  ]
+}
+```
+
+## Rate Limits
+
+Admin endpoints have higher rate limits:
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| Read operations | 1000/minute |
+| Write operations | 200/minute |
+| Bulk operations | 10/minute |
+| Broadcast messages | 1/minute |
+
+## Security
+
+All admin actions are:
+- Logged in audit trail
+- Require 2FA authentication
+- Restricted by IP allowlist
+- Monitored for anomalies
+
+## Error Handling
+
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_PERMISSIONS",
+    "message": "Admin role required for this action",
+    "required_scope": "admin:write"
+  }
+}
+```

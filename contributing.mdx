@@ -1,91 +1,75 @@
 ---
-title: "Contributing Guide"
-description: "How to contribute to FindU"
-icon: "code-pull-request"
+title: "Development Guide"
+description: "Development workflow and standards for FindU team"
+icon: "code"
 ---
 
-# Contributing to FindU
+# FindU Development Guide
 
-We love contributions! This guide will help you get started.
+This guide covers our development workflow, standards, and best practices for the FindU engineering team.
 
-## Finding Something to Work On
+## Repository Overview
 
-### Good First Issues
-
-Look for these labels in our repositories:
-
-<CardGroup cols={3}>
-  <Card title="good-first-issue" icon="seedling">
-    Perfect for newcomers
+<CardGroup cols={2}>
+  <Card title="web_app" icon="browser">
+    React dashboard for partners
+    - Partner analytics
+    - Messaging interface
+    - Profile management
+    - Scholarship tools
   </Card>
-  <Card title="help-wanted" icon="hand">
-    We need help with these
+  
+  <Card title="ios_app" icon="mobile">
+    Native iOS app for students
+    - College swiping
+    - Student messaging
+    - Profile creation
+    - Social features
   </Card>
-  <Card title="bug" icon="bug">
-    Something needs fixing
+  
+  <Card title="matching-algorithm" icon="brain">
+    ML matching engine
+    - Recommendation API
+    - Learning algorithms
+    - Performance optimization
+    - Mobile endpoints
+  </Card>
+  
+  <Card title="supabase" icon="database">
+    Backend infrastructure
+    - Database schema
+    - Edge Functions
+    - Authentication
+    - Real-time features
   </Card>
 </CardGroup>
 
-Browse issues: [github.com/orgs/findu-app/issues](https://github.com/orgs/findu-app/issues)
-
-### By Repository
-
-Not sure where to start? Here's what each repo typically needs:
-
-<Tabs>
-  <Tab title="web_app">
-    - UI/UX improvements
-    - New dashboard features
-    - Performance optimizations
-    - TypeScript migrations
-    - Test coverage
-  </Tab>
-  
-  <Tab title="ios_app">
-    - SwiftUI enhancements
-    - Bug fixes
-    - Performance improvements
-    - New student features
-    - Accessibility updates
-  </Tab>
-  
-  <Tab title="matching-algorithm">
-    - Algorithm improvements
-    - New matching factors
-    - Performance optimization
-    - Data analysis
-    - API endpoints
-  </Tab>
-  
-  <Tab title="supabase">
-    - Database optimizations
-    - New Edge Functions
-    - Migration scripts
-    - RLS policy updates
-    - Performance queries
-  </Tab>
-</Tabs>
-
 ## Development Process
 
-### 1. Before You Start
+### 1. Starting New Work
 
 <Steps>
-  <Step title="Check Existing Work">
-    - Search for existing PRs addressing the issue
-    - Check if someone is already assigned
-    - Read any discussion on the issue
+  <Step title="Check Current Sprint">
+    - Review sprint board for assigned tasks
+    - Check with team lead for priorities
+    - Understand acceptance criteria
   </Step>
   
-  <Step title="Claim the Issue">
-    Comment on the issue: "I'd like to work on this!"
-    Wait for assignment before starting major work
+  <Step title="Pull Latest Changes">
+    Always start from updated dev branch:
+    ```bash
+    git checkout dev
+    git pull origin dev
+    ```
   </Step>
   
-  <Step title="Understand Context">
-    - Read related code and tests
-    - Check CLAUDE.md in the repository
-    - Ask questions if requirements unclear
+  <Step title="Create Feature Branch">
+    Use descriptive branch names:
+    ```bash
+    git checkout -b feature/add-scholarship-filters
+    git checkout -b fix/profile-creation-bug
+    git checkout -b chore/update-dependencies
+    ```
   </Step>
 </Steps>
 
@@ -194,72 +178,115 @@ What happens after you open a PR:
     GitHub Actions will run:
     - Linting
     - Type checking
-    - Tests (if configured)
+    - Security checks
+    - Build verification
   </Step>
   
   <Step title="Code Review">
-    A team member will review:
-    - Code quality
-    - Architecture fit
+    Team members will review:
+    - Code quality and standards
+    - Architecture alignment
     - Performance impact
+    - Security considerations
   </Step>
   
-  <Step title="Feedback">
-    - Address review comments
-    - Push updates to your branch
-    - Re-request review when ready
+  <Step title="Testing">
+    - Verify changes work locally
+    - Test on dev environment
+    - Check for regressions
+    - Mobile app: test on devices
   </Step>
   
-  <Step title="Merge">
+  <Step title="Merge & Deploy">
     Once approved:
     - PR merged to dev
-    - Branch deleted
-    - Changes deployed to dev environment
+    - Auto-deployed to dev environment
+    - Monitor for issues
+    - Plan production release
   </Step>
 </Steps>
 
-## Getting Help
+## Team Communication
 
 <CardGroup cols={2}>
-  <Card title="Technical Questions" icon="circle-question">
-    Ask in #dev-questions with:
-    - What you're trying to do
-    - What you've tried
-    - Error messages/screenshots
+  <Card title="Daily Standup" icon="users">
+    Share progress and blockers
+    - What you completed
+    - What you're working on
+    - Any blockers
+  </Card>
+  
+  <Card title="Technical Help" icon="circle-question">
+    Getting unstuck:
+    - Ask in #dev-help
+    - Pair with teammates
+    - Schedule 1:1 with lead
   </Card>
   
   <Card title="Design Decisions" icon="compass">
     For architecture questions:
-    - Check with team lead
-    - Discuss in PR comments
-    - Bring to tech standup
+    - Document in PR
+    - Discuss in tech meeting
+    - Create ADR if needed
+  </Card>
+  
+  <Card title="Sprint Planning" icon="calendar">
+    Weekly planning:
+    - Review upcoming work
+    - Estimate tasks
+    - Identify dependencies
   </Card>
 </CardGroup>
 
-## Recognition
+## Development Standards
 
-We value all contributions:
+### Code Quality
+- Write clean, readable code
+- Add meaningful comments for complex logic
+- Keep functions small and focused
+- Follow DRY principles
 
-- 🐛 **Bug Fixes**: Every fix improves user experience
-- ✨ **Features**: New capabilities for our users  
-- 📚 **Documentation**: Helps the whole team
-- 🧪 **Tests**: Makes our code more reliable
-- ♻️ **Refactoring**: Keeps codebase healthy
+### Testing
+- Write tests for new features
+- Maintain existing test coverage
+- Test edge cases
+- Manual testing before PR
 
-Contributors are recognized in:
-- Release notes
-- Team standups
-- Contributor stats
+### Documentation
+- Update README for significant changes
+- Document new APIs
+- Keep CLAUDE.md files current
+- Add inline documentation
 
-## Code of Conduct
+### Security
+- Never commit secrets
+- Follow security best practices
+- Review dependencies
+- Report vulnerabilities immediately
 
-Be respectful, inclusive, and professional:
+## Deployment Process
 
-- Welcome newcomers
-- Provide constructive feedback
-- Focus on what's best for users
-- Assume positive intent
+<Steps>
+  <Step title="Development">
+    All feature work merges to dev branch
+    - Automatically deploys to dev environment
+    - Available for team testing
+  </Step>
+  
+  <Step title="Staging">
+    Dev branch serves as staging
+    - Full testing before production
+    - Performance verification
+  </Step>
+  
+  <Step title="Production">
+    Weekly production releases
+    - Dev → Main merge
+    - Deployment automation
+    - Post-deploy verification
+  </Step>
+</Steps>
 
 <Note>
-  **First time?** Don't be shy! We're here to help. Every expert was once a beginner.
+  **Remember**: We're building something amazing together. Quality over speed, communication over assumptions.
 </Note>

@@ -37,7 +37,12 @@
             "group": "Platform Components",
             "pages": [
               "developer/ios-api-setup",
-              "developer/ios-api-integration",
+              "developer/ios-api-integration"
+            ]
+          },
+          {
+            "group": "Database",
+            "pages": [
               "database/overview",
               "database/migrations-guide",
               "database/schema-management",
@@ -62,8 +67,13 @@
             "group": "Staff Documentation",
             "pages": [
               "internal/overview",
-              "internal/partner-management",
               "internal/common-queries"
+            ]
+          },
+          {
+            "group": "Partner Support",
+            "pages": [
+              "internal/partner-management"
             ]
           }
         ]

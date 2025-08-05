@@ -1,0 +1,652 @@
+---
+title: 'Database Troubleshooting'
+description: 'Common database issues and their solutions'
+icon: 'wrench'
+---
+
+# Database Troubleshooting
+
+This guide helps you diagnose and fix common database issues in the FindU ecosystem. Each section includes symptoms, causes, and step-by-step solutions.
+
+## Connection Issues
+
+### Cannot Connect to Database
+
+<Tabs>
+  <Tab title="Symptoms">
+    - `FATAL: password authentication failed`
+    - `could not connect to server`
+    - `timeout expired`
+    - `SASL authentication failed`
+  </Tab>
+  
+  <Tab title="Diagnosis">
+    ```bash
+    # Check current environment
+    ./findu env status
+    
+    # Verify connection string
+    echo $DATABASE_URL
+    
+    # Test connection
+    psql $DATABASE_URL -c "SELECT 1"
+    
+    # Check Supabase project status
+    supabase status
+    ```
+  </Tab>
+  
+  <Tab title="Solutions">
+    1. **Wrong environment**:
+       ```bash
+       ./findu env switch dev  # or prod
+       ```
+    
+    2. **Expired token**:
+       ```bash
+       # Get new token from https://app.supabase.com/account/tokens
+       echo "SUPABASE_ACCESS_TOKEN=new_token" >> .env.local
+       ```
+    
+    3. **Network issues**:
+       ```bash
+       # Check if Supabase is accessible
+       curl -I https://app.supabase.com
+       
+       # Try direct connection
+       psql postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+       ```
+    
+    4. **Update MCP config**:
+       ```bash
+       ./findu update mcp
+       ```
+  </Tab>
+</Tabs>
+
+### SSL Connection Required
+
+```sql
+-- Error: SSL connection is required
+
+-- Solution 1: Add SSL mode to connection string
+postgresql://user:pass@host:5432/db?sslmode=require
+
+-- Solution 2: Set environment variable
+export PGSSLMODE=require
+```
+
+## Migration Issues
+
+### Migration Already Exists
+
+<Warning>
+Never modify a migration that has been deployed. Create a new migration to fix issues.
+</Warning>
+
+<Steps>
+  <Step title="Check migration status">
+    ```bash
+    supabase migration list
+    ```
+  </Step>
+  
+  <Step title="If local only">
+    ```bash
+    # Remove the local migration file
+    rm supabase/migrations/[timestamp]_migration_name.sql
+    
+    # Create new one with different name
+    supabase migration new fixed_migration_name
+    ```
+  </Step>
+  
+  <Step title="If already deployed">
+    ```bash
+    # Create a fix migration
+    supabase migration new fix_previous_migration
+    
+    # Add your fixes to the new migration
+    ```
+  </Step>
+</Steps>
+
+### Migration Fails to Apply
+
+<CodeGroup>
+```sql Schema Conflicts
+-- Error: relation "table_name" already exists
+
+-- Fix: Use IF NOT EXISTS
+CREATE TABLE IF NOT EXISTS public.table_name (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+);
+
+-- For columns
+ALTER TABLE public.table_name 
+  ADD COLUMN IF NOT EXISTS new_column text;
+
+-- For constraints
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'constraint_name'
+  ) THEN
+    ALTER TABLE public.table_name
+      ADD CONSTRAINT constraint_name CHECK (column > 0);
+  END IF;
+END $$;
+```
+
+```sql Dependency Issues
+-- Error: cannot drop table because other objects depend on it
+
+-- See dependencies
+SELECT 
+  dependent_ns.nspname as dependent_schema,
+  dependent_view.relname as dependent_view,
+  source_ns.nspname as source_schema,
+  source_table.relname as source_table
+FROM pg_depend 
+JOIN pg_rewrite ON pg_depend.objid = pg_rewrite.oid 
+JOIN pg_class as dependent_view ON pg_rewrite.ev_class = dependent_view.oid 
+JOIN pg_class as source_table ON pg_depend.refobjid = source_table.oid 
+JOIN pg_namespace dependent_ns ON dependent_view.relnamespace = dependent_ns.oid
+JOIN pg_namespace source_ns ON source_table.relnamespace = source_ns.oid
+WHERE 
+  source_ns.nspname = 'public'
+  AND source_table.relname = 'your_table_name';
+
+-- Fix: Drop dependents first or use CASCADE
+DROP TABLE public.table_name CASCADE; -- Be careful!
+```
+
+```sql Data Type Conflicts
+-- Error: column "column_name" cannot be cast automatically
+
+-- Fix: Provide explicit cast
+ALTER TABLE public.table_name 
+  ALTER COLUMN column_name 
+  TYPE integer USING column_name::integer;
+
+-- For complex conversions
+ALTER TABLE public.students
+  ALTER COLUMN graduation_year 
+  TYPE integer USING 
+    CASE 
+      WHEN graduation_year ~ '^\d{4}$' THEN graduation_year::integer
+      ELSE NULL
+    END;
+```
+</CodeGroup>
+
+### Migration Order Issues
+
+```bash
+# Symptoms: Foreign key constraints fail
+
+# Solution 1: Check migration order
+ls -la supabase/migrations/
+
+# Solution 2: Combine related migrations
+cat supabase/migrations/*create_tables* > supabase/migrations/[timestamp]_create_all_tables.sql
+
+# Solution 3: Defer constraints
+BEGIN;
+SET CONSTRAINTS ALL DEFERRED;
+-- Your migration SQL here
+COMMIT;
+```
+
+## RLS (Row Level Security) Issues
+
+### All Queries Return Empty
+
+<Steps>
+  <Step title="Check if RLS is enabled">
+    ```sql
+    SELECT 
+      schemaname, 
+      tablename, 
+      rowsecurity 
+    FROM pg_tables 
+    WHERE schemaname = 'public' 
+      AND tablename = 'your_table';
+    ```
+  </Step>
+  
+  <Step title="Check policies exist">
+    ```sql
+    SELECT 
+      pol.polname as policy_name,
+      pol.polcmd as command,
+      pol.polroles as roles,
+      CASE 
+        WHEN pol.polpermissive THEN 'PERMISSIVE'
+        ELSE 'RESTRICTIVE'
+      END as type
+    FROM pg_policies pol
+    WHERE pol.schemaname = 'public'
+      AND pol.tablename = 'your_table';
+    ```
+  </Step>
+  
+  <Step title="Test as specific user">
+    ```sql
+    -- Set user context
+    SET request.jwt.claim.sub TO 'user-uuid-here';
+    
+    -- Test query
+    SELECT * FROM public.your_table;
+    
+    -- Reset context
+    RESET request.jwt.claim.sub;
+    ```
+  </Step>
+  
+  <Step title="Debug policy">
+    ```sql
+    -- Create debug policy
+    CREATE POLICY "debug_policy" ON public.your_table
+      FOR SELECT
+      USING (
+        RAISE NOTICE 'User ID: %, Row ID: %', auth.uid(), id
+        RETURNING true
+      );
+    ```
+  </Step>
+</Steps>
+
+### Policy Not Working as Expected
+
+```sql
+-- Common RLS debugging queries
+
+-- Check current user
+SELECT 
+  auth.uid() as user_id,
+  auth.role() as role,
+  auth.email() as email;
+
+-- Test policy condition directly
+SELECT 
+  s.*,
+  (EXISTS (
+    SELECT 1 FROM public.profiles p 
+    WHERE p.user_id = auth.uid() 
+      AND p.student_id = s.id
+  )) as policy_passes
+FROM public.students s;
+
+-- Bypass RLS temporarily (dev only!)
+ALTER TABLE public.your_table DISABLE ROW LEVEL SECURITY;
+-- Don't forget to re-enable!
+ALTER TABLE public.your_table ENABLE ROW LEVEL SECURITY;
+```
+
+## Performance Issues
+
+### Slow Queries
+
+<Tabs>
+  <Tab title="Identify Slow Queries">
+    ```sql
+    -- Enable query timing
+    \timing on
+    
+    -- Get query plan
+    EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) 
+    SELECT * FROM public.student_school_interactions
+    WHERE student_id = 'uuid'
+      AND liked = true
+    ORDER BY interaction_date DESC;
+    
+    -- Find missing indexes
+    SELECT 
+      schemaname,
+      tablename,
+      attname,
+      n_distinct,
+      most_common_vals
+    FROM pg_stats
+    WHERE tablename = 'student_school_interactions'
+      AND attname IN ('student_id', 'liked');
+    ```
+  </Tab>
+  
+  <Tab title="Common Fixes">
+    ```sql
+    -- Add missing indexes
+    CREATE INDEX CONCURRENTLY idx_interactions_student_liked 
+    ON public.student_school_interactions(student_id, liked)
+    WHERE liked = true;
+    
+    -- Update table statistics
+    ANALYZE public.student_school_interactions;
+    
+    -- Rewrite query to use indexes
+    -- Bad: Functions on indexed columns
+    SELECT * FROM students 
+    WHERE LOWER(email) = 'test@example.com';
+    
+    -- Good: Index on expression
+    CREATE INDEX idx_students_email_lower 
+    ON students(LOWER(email));
+    ```
+  </Tab>
+  
+  <Tab title="Query Optimization">
+    ```sql
+    -- Use EXISTS instead of IN for large datasets
+    -- Bad
+    SELECT * FROM students 
+    WHERE id IN (
+      SELECT student_id FROM interactions WHERE liked = true
+    );
+    
+    -- Good
+    SELECT * FROM students s
+    WHERE EXISTS (
+      SELECT 1 FROM interactions i 
+      WHERE i.student_id = s.id AND i.liked = true
+    );
+    
+    -- Limit early in CTEs
+    WITH recent_students AS (
+      SELECT * FROM students 
+      WHERE created_at > NOW() - INTERVAL '7 days'
+      LIMIT 1000  -- Limit here
+    )
+    SELECT * FROM recent_students
+    ORDER BY gpa DESC
+    LIMIT 10;  -- Not just here
+    ```
+  </Tab>
+</Tabs>
+
+### Database Size Issues
+
+```sql
+-- Check table sizes
+SELECT 
+  schemaname,
+  tablename,
+  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
+  pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) as table_size,
+  pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) as indexes_size
+FROM pg_tables
+WHERE schemaname = 'public'
+ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
+
+-- Find bloated indexes
+SELECT 
+  schemaname,
+  tablename,
+  indexname,
+  pg_size_pretty(pg_relation_size(indexrelid)) as index_size,
+  idx_tup_read,
+  idx_tup_fetch
+FROM pg_stat_user_indexes
+WHERE idx_tup_read > 0
+ORDER BY pg_relation_size(indexrelid) DESC;
+
+-- Clean up
+VACUUM ANALYZE; -- Gentle cleanup
+VACUUM FULL; -- Aggressive, locks tables
+REINDEX CONCURRENTLY INDEX index_name; -- Rebuild index
+```
+
+## Data Integrity Issues
+
+### Constraint Violations
+
+<CodeGroup>
+```sql Foreign Key
+-- Error: violates foreign key constraint
+
+-- Find orphaned records
+SELECT ssi.*
+FROM public.student_school_interactions ssi
+LEFT JOIN public.students s ON ssi.student_id = s.id
+WHERE s.id IS NULL;
+
+-- Fix: Delete orphans or add missing parents
+DELETE FROM public.student_school_interactions
+WHERE student_id NOT IN (
+  SELECT id FROM public.students
+);
+
+-- Prevent future issues
+ALTER TABLE public.student_school_interactions
+  DROP CONSTRAINT fk_student,
+  ADD CONSTRAINT fk_student 
+    FOREIGN KEY (student_id) 
+    REFERENCES public.students(id) 
+    ON DELETE CASCADE;
+```
+
+```sql Unique Constraint
+-- Error: duplicate key value violates unique constraint
+
+-- Find duplicates
+SELECT email, COUNT(*)
+FROM public.students
+GROUP BY email
+HAVING COUNT(*) > 1;
+
+-- Fix: Remove or merge duplicates
+WITH duplicates AS (
+  SELECT id, email,
+    ROW_NUMBER() OVER (PARTITION BY email ORDER BY created_at DESC) as rn
+  FROM public.students
+)
+DELETE FROM public.students
+WHERE id IN (
+  SELECT id FROM duplicates WHERE rn > 1
+);
+```
+
+```sql Check Constraint
+-- Error: violates check constraint
+
+-- Find invalid data
+SELECT * FROM public.students
+WHERE gpa < 0 OR gpa > 5.0;
+
+-- Fix: Update or remove invalid data
+UPDATE public.students
+SET gpa = LEAST(GREATEST(gpa, 0), 5.0)
+WHERE gpa < 0 OR gpa > 5.0;
+
+-- Add constraint safely
+ALTER TABLE public.students
+  ADD CONSTRAINT check_gpa_valid 
+  CHECK (gpa >= 0 AND gpa <= 5.0)
+  NOT VALID;
+
+-- Validate later
+ALTER TABLE public.students
+  VALIDATE CONSTRAINT check_gpa_valid;
+```
+</CodeGroup>
+
+### Data Inconsistencies
+
+```sql
+-- Find and fix common inconsistencies
+
+-- Mismatched counts
+WITH counts AS (
+  SELECT 
+    c.id,
+    c.message_count,
+    COUNT(m.id) as actual_count
+  FROM public.conversations c
+  LEFT JOIN public.messages m ON c.id = m.conversation_id
+  GROUP BY c.id, c.message_count
+)
+UPDATE public.conversations
+SET message_count = counts.actual_count
+FROM counts
+WHERE conversations.id = counts.id
+  AND counts.message_count != counts.actual_count;
+
+-- Orphaned records
+DELETE FROM public.conversation_participants
+WHERE conversation_id NOT IN (
+  SELECT id FROM public.conversations
+);
+
+-- Circular references
+WITH RECURSIVE hierarchy AS (
+  SELECT id, parent_id, 1 as level
+  FROM public.categories
+  WHERE parent_id IS NULL
+  
+  UNION ALL
+  
+  SELECT c.id, c.parent_id, h.level + 1
+  FROM public.categories c
+  JOIN hierarchy h ON c.parent_id = h.id
+  WHERE h.level < 10  -- Prevent infinite recursion
+)
+SELECT * FROM hierarchy
+ORDER BY level, id;
+```
+
+## Supabase-Specific Issues
+
+### Storage Issues
+
+```sql
+-- Check storage usage
+SELECT 
+  auth.uid() as user_id,
+  bucket_id,
+  COUNT(*) as file_count,
+  pg_size_pretty(SUM(COALESCE(metadata->>'size', '0')::bigint)) as total_size
+FROM storage.objects
+GROUP BY auth.uid(), bucket_id;
+
+-- Clean up orphaned files
+DELETE FROM storage.objects
+WHERE owner NOT IN (
+  SELECT id FROM auth.users
+);
+```
+
+### Auth Issues
+
+```sql
+-- Check auth configuration
+SELECT * FROM auth.users WHERE email = 'user@example.com';
+
+-- Verify user metadata
+SELECT 
+  id,
+  email,
+  raw_user_meta_data,
+  created_at,
+  last_sign_in_at
+FROM auth.users
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Fix missing profiles
+INSERT INTO public.profiles (id, role)
+SELECT 
+  id as id,
+  'student' as role
+FROM auth.users
+WHERE id NOT IN (
+  SELECT id FROM public.profiles
+);
+```
+
+## Emergency Procedures
+
+### Database Locked
+
+```sql
+-- Find blocking queries
+SELECT 
+  blocked_locks.pid AS blocked_pid,
+  blocked_activity.usename AS blocked_user,
+  blocking_locks.pid AS blocking_pid,
+  blocking_activity.usename AS blocking_user,
+  blocked_activity.query AS blocked_statement,
+  blocking_activity.query AS blocking_statement
+FROM pg_catalog.pg_locks blocked_locks
+JOIN pg_catalog.pg_stat_activity blocked_activity 
+  ON blocked_activity.pid = blocked_locks.pid
+JOIN pg_catalog.pg_locks blocking_locks 
+  ON blocking_locks.locktype = blocked_locks.locktype
+  AND blocking_locks.relation = blocked_locks.relation
+  AND blocking_locks.pid != blocked_locks.pid
+JOIN pg_catalog.pg_stat_activity blocking_activity 
+  ON blocking_activity.pid = blocking_locks.pid
+WHERE NOT blocked_locks.granted;
+
+-- Kill blocking query (use carefully!)
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE pid = [blocking_pid];
+```
+
+### Rollback Recent Changes
+
+```sql
+-- Create restore point (before risky operation)
+SELECT pg_create_restore_point('before_risky_change');
+
+-- Use transactions
+BEGIN;
+-- Your risky operations
+SAVEPOINT my_savepoint;
+-- More operations
+-- If something goes wrong:
+ROLLBACK TO my_savepoint;
+-- Or if all good:
+COMMIT;
+
+-- Restore from backup (contact Supabase support for production)
+```
+
+## Prevention Best Practices
+
+<Checklist>
+- [ ] Always test migrations locally first
+- [ ] Use transactions for multi-step operations
+- [ ] Add IF EXISTS/IF NOT EXISTS clauses
+- [ ] Create indexes CONCURRENTLY in production
+- [ ] Monitor slow query logs regularly
+- [ ] Set up alerts for database metrics
+- [ ] Regular VACUUM ANALYZE schedule
+- [ ] Document any manual database changes
+</Checklist>
+
+## Getting Help
+
+<Steps>
+  <Step title="Check Supabase Status">
+    Visit [status.supabase.com](https://status.supabase.com)
+  </Step>
+  
+  <Step title="Review Logs">
+    ```bash
+    # In Supabase Dashboard
+    # Settings → Logs → Database logs
+    ```
+  </Step>
+  
+  <Step title="Contact Support">
+    - Development issues: Team discussion
+    - Production emergencies: Supabase support
+    - Include error messages and query examples
+  </Step>
+</Steps>
+
+---
+
+Return to [database overview](/database/overview) or learn about [migrations](/database/migrations-guide).

@@ -1,0 +1,136 @@
+---
+title: 'iOS API Setup Instructions'
+description: 'Configure and test the matching API integration in the iOS app'
+icon: 'mobile-button'
+---
+
+## Overview
+
+The iOS app is integrated with the Python matching API deployed at:
+`https://findu-matching-production.up.railway.app`
+
+## Current Status
+
+<Card>
+  <CardHeader>
+    <CardTitle>Integration Status</CardTitle>
+  </CardHeader>
+  <CardContent>
+    - ✅ API client implemented and configured
+    - ✅ CardsViewModelAPI uses API for recommendations
+    - ✅ Swipe recording and feedback collection working
+    - ⚠️ Test users need to be created in the database for API to work
+  </CardContent>
+</Card>
+
+## Setup Test Student
+
+### Using an Existing Student (Current Setup)
+
+The app is configured to use an existing student ID for testing:
+- **Student ID**: `47f9c3d6-7c88-4eee-93ae-6d7ea78123f7`
+- **Configuration**: `TestConfiguration.swift`
+
+To use a different student:
+1. Find another student ID in your Supabase students table
+2. Update `TestConfiguration.testStudentId` with that ID
+
+### Alternative: Create a New Test Student
+
+If you prefer to create a dedicated test student:
+1. Use the `create_test_student_simple.sql` script which clones an existing student
+2. Or manually create a student in Supabase with valid constraint values
+
+## How It Works
+
+<Tabs>
+  <Tab title="Test Users">
+    For users with email containing "test":
+    - Automatically uses the test student ID for API calls
+    - Shows "Test Mode" indicator but still gets personalized matches
+    - All matching algorithms work normally
+  </Tab>
+  
+  <Tab title="Real Users">
+    For production users:
+    - Uses their actual student ID from the database
+    - Full personalized matching experience
+    - Learning system adapts based on their swipes
+  </Tab>
+</Tabs>
+
+## Visual Indicators
+
+### Test Mode
+- 🟠 Orange "Test Mode" badge appears in the top left
+- Cards show "🧪 Test mode" in explanations when using random fallback
+- Clear error messages when student not found
+
+### API Mode
+- No badge when using real API recommendations
+- Match explanations show actual matching reasons
+- Learning system adapts based on swipes
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Student not found errors">
+    1. Run the create_test_student.sql script
+    2. Or create a student with the test ID in your database
+    3. Make sure the API is deployed and healthy
+  </Accordion>
+  
+  <Accordion title="Network errors">
+    1. Check your internet connection
+    2. Verify the API URL is accessible
+    3. Check Railway deployment status
+  </Accordion>
+  
+  <Accordion title="No recommendations">
+    1. Ensure colleges have vector data (run compute_vectors.py)
+    2. Check that student preferences are reasonable
+    3. Verify excluded school list isn't too large
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+To complete the integration:
+1. Run the test student creation script in Supabase
+2. Test the app with a test email address
+3. Verify personalized recommendations are loading
+4. Remove any remaining references to random school selection
+
+## API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/recommendations` | POST | Get personalized matches |
+| `/swipe` | POST | Record swipe interactions |
+| `/health` | GET | Check API status |
+
+## Configuration
+
+The API URL is configured in:
+- **File**: `MatchingAPIClient.swift` (Line 18)
+- **Current URL**: `https://findu-matching-production.up.railway.app`
+
+### Changing the API URL
+
+<Steps>
+  <Step title="Update baseURL">
+    Modify the baseURL in MatchingAPIClient.swift
+  </Step>
+  
+  <Step title="Update AppConfig">
+    Update AppConfig.swift if using environment-based URLs
+  </Step>
+  
+  <Step title="Rebuild">
+    Clean build folder and rebuild the app
+  </Step>
+</Steps>
+
+<Warning>
+Always ensure test student IDs exist in the database before testing the API integration.
+</Warning>

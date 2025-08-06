@@ -30,7 +30,8 @@
               "developer/initial-setup",
               "developer/environment-config",
               "developer/workflow-guide",
-              "developer/cli-reference"
+              "developer/cli-reference",
+              "developer/troubleshooting"
             ]
           },
           {

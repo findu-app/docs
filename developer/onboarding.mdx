@@ -32,17 +32,26 @@ Complete these items before running the setup script:
   <Step title="Install Prerequisites">
     ```bash
     # macOS (using Homebrew)
-    brew install git node supabase/tap/supabase
+    brew install git node python3 supabase/tap/supabase
+    
+    # Install Docker Desktop
+    # Download from: https://www.docker.com/products/docker-desktop
     
     # Verify installations
-    git --version      # Should be 2.30+
-    node --version     # Should be 18+
-    supabase --version # Latest version
+    git --version        # Should be 2.30+
+    node --version       # Should be 18+
+    python3 --version    # Should be 3.8+
+    supabase --version   # Latest version
+    docker --version     # Docker Desktop should be running
     ```
     
     For iOS development also install:
     - [ ] Xcode from App Store
     - [ ] CocoaPods: `sudo gem install cocoapods`
+    
+    <Warning>
+      Make sure Docker Desktop is running before proceeding. You'll see a whale icon in your menu bar.
+    </Warning>
   </Step>
 </Steps>
 
@@ -64,13 +73,22 @@ Once you have access, set up your development environment:
   
   <Step title="Run Setup Script">
     ```bash
-    # Clone dev-tools and run setup
+    # Clone dev-tools
     git clone https://github.com/findu-app/dev-tools.git
-    cd dev-tools
-    ./scripts/setup.sh
+    
+    # Run setup from parent directory (NOT from inside dev-tools!)
+    ./dev-tools/scripts/setup.sh
     ```
     
-    The script will prompt for your credentials and set everything up.
+    The script will:
+    - Clone all repositories
+    - Create `.env.local` template
+    - Optionally install dependencies (answer 'y' for full setup)
+    - Create the `findu` CLI tool
+    
+    <Note>
+      Full setup with dependencies takes 15-20 minutes. You can skip dependency installation and run it later.
+    </Note>
   </Step>
   
   <Step title="Verify Setup">

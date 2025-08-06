@@ -16,6 +16,8 @@ Before you begin, ensure you have:
   <Card title="Required Tools" icon="wrench">
     - Git (v2.30+)
     - Node.js (v18+ LTS)
+    - Python 3.8+
+    - Docker Desktop
     - Supabase CLI
     - Xcode (for iOS development)
   </Card>
@@ -26,6 +28,37 @@ Before you begin, ensure you have:
     - Railway access (optional)
   </Card>
 </CardGroup>
+
+### Installing Prerequisites
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    # Install Homebrew if needed
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # Install required tools
+    brew install git node python3
+    brew install supabase/tap/supabase
+    
+    # Install Docker Desktop
+    # Download from: https://www.docker.com/products/docker-desktop
+    
+    # For iOS development
+    # Install Xcode from App Store
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```bash
+    # Install using Chocolatey or download installers:
+    choco install git nodejs python3 docker-desktop
+    
+    # Supabase CLI
+    scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+    scoop install supabase
+    ```
+  </Tab>
+</Tabs>
 
 <Note>
   Don't have access yet? See our [onboarding checklist](/developer/onboarding) for new team members.
@@ -39,17 +72,24 @@ We've created a script that sets up your entire development environment:
 # Clone the dev-tools repository
 git clone https://github.com/findu-app/dev-tools.git
 
-# Run the setup script
-cd dev-tools
-./scripts/setup.sh
+# Run the setup script from the parent directory (important!)
+./dev-tools/scripts/setup.sh
 ```
 
+<Warning>
+Do NOT cd into dev-tools before running the script. Run it from the parent directory.
+</Warning>
+
 This script will:
-1. Clone all FindU repositories
-2. Install dependencies for each project
-3. Create your `.env.local` configuration
-4. Set up pre-commit hooks
-5. Configure the findu CLI tool
+1. Clone all FindU repositories (~5 minutes)
+2. Prompt to install dependencies for each project (~10-15 minutes if yes)
+3. Create your `.env.local` configuration template
+4. Prompt to set up pre-commit hooks
+5. Configure the `findu` CLI tool
+
+<Note>
+First time setup takes approximately 15-20 minutes with dependency installation.
+</Note>
 
 ## Manual Setup (Alternative)
 
@@ -83,7 +123,17 @@ If you prefer manual setup or need to troubleshoot:
   </Step>
   
   <Step title="Configure Environment">
-    Create `~/.env.local` with your credentials (get from team lead)
+    The setup script creates `.env.local` with placeholders. Get real credentials from your team lead:
+    
+    **Required for basic development:**
+    - `SUPABASE_PROJECT_ID_DEV`
+    - `SUPABASE_URL_DEV`
+    - `SUPABASE_ANON_KEY_DEV`
+    
+    **Optional (can use defaults):**
+    - Service role keys
+    - OAuth credentials
+    - API tokens
   </Step>
 </Steps>
 
@@ -92,15 +142,33 @@ If you prefer manual setup or need to troubleshoot:
 Run these commands to verify everything is working:
 
 ```bash
-# Check environment
+# Check environment and CLI
 ./findu env status
+# Should show: Current environment: dev
 
-# Run web app
-cd ~/findu/web_app && npm run dev
+# Check if repositories were cloned
+ls -la
+# Should show: ios_app, web_app, supabase, matching-algorithm, data_scraping, docs
 
-# Check database connection
-cd ~/findu/supabase && supabase status
+# Verify Docker is running (required for Supabase)
+docker ps
+# Should show Docker containers or empty list (not an error)
+
+# If you installed dependencies, test web app
+cd web_app && npm run dev
+# Should start development server on http://localhost:5173
+
+# Test Supabase CLI (requires Docker)
+cd ../supabase && supabase start
+# First run will download Docker images (~1-2 minutes)
 ```
+
+<Accordion title="Troubleshooting Common Issues">
+  - **"Docker daemon not running"**: Start Docker Desktop application
+  - **"command not found: supabase"**: Run `brew install supabase/tap/supabase`
+  - **"npm: command not found"**: Install Node.js or check PATH
+  - **"Cannot find module"**: Run `npm install` in the project directory
+</Accordion>
 
 ## Make Your First Change
 

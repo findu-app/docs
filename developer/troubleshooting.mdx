@@ -1,0 +1,255 @@
+---
+title: "Troubleshooting Guide"
+description: "Common issues and solutions for FindU development"
+icon: "wrench"
+---
+
+# Development Troubleshooting
+
+This guide covers common issues you might encounter during FindU development and how to resolve them.
+
+## Setup Issues
+
+### "Please run this script from the findu root directory"
+
+**Problem**: Running setup script from wrong directory
+```bash
+cd dev-tools
+./scripts/setup.sh  # ❌ This fails
+```
+
+**Solution**: Run from parent directory
+```bash
+./dev-tools/scripts/setup.sh  # ✅ Correct
+```
+
+### "Cannot connect to Docker daemon"
+
+**Problem**: Docker Desktop is not running
+```
+failed to inspect container health: Cannot connect to the Docker daemon
+```
+
+**Solution**: 
+1. Start Docker Desktop application
+2. Wait for whale icon to appear in menu bar
+3. Verify with: `docker ps`
+
+### "command not found: supabase"
+
+**Problem**: Supabase CLI not installed
+
+**Solution**:
+```bash
+# macOS
+brew install supabase/tap/supabase
+
+# Windows
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+```
+
+## Component-Specific Issues
+
+### Web App
+
+#### "Cannot find module" errors
+```bash
+Error: Cannot find module '@radix-ui/react-dialog'
+```
+
+**Solution**: Install dependencies
+```bash
+cd web_app
+npm install
+```
+
+#### Port already in use
+```
+Error: Port 5173 is already in use
+```
+
+**Solution**: Kill the process or use different port
+```bash
+# Find process
+lsof -i :5173
+# Kill it
+kill -9 <PID>
+
+# Or use different port
+npm run dev -- --port 5174
+```
+
+### iOS App
+
+#### "No such module 'Supabase'"
+
+**Solution**: Install CocoaPods dependencies
+```bash
+cd ios_app
+pod install
+# Open ios_app.xcworkspace (not .xcodeproj)
+```
+
+#### Missing Secrets.xcconfig
+
+**Solution**: Copy example and add credentials
+```bash
+cp Secrets.xcconfig.example Secrets.xcconfig
+# Edit with your Supabase credentials
+```
+
+### Supabase Local Development
+
+#### "supabase start" hangs
+
+**Problem**: First run downloads Docker images
+
+**Solution**: Be patient (2-5 minutes first time)
+```bash
+supabase start
+# Started supabase local development setup.
+# API URL: http://localhost:54321
+```
+
+#### Database connection refused
+
+**Solution**: Ensure Supabase is running
+```bash
+cd supabase
+supabase status  # Check if running
+supabase start   # Start if needed
+```
+
+### Python/ML Environment
+
+#### Module import errors
+
+**Solution**: Create and activate virtual environment
+```bash
+cd matching-algorithm
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# or
+venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+```
+
+## Environment Configuration
+
+### Missing credentials errors
+
+**Problem**: `.env.local` has placeholder values
+
+**Solution**: Get real credentials from team lead
+- Required: Supabase project ID, URL, and anon key
+- Optional: Service keys, OAuth credentials
+
+### Environment not switching
+
+**Problem**: `./findu env switch` not working
+
+**Solution**: Check `.env.local` exists
+```bash
+# Should be in root findu directory
+ls -la .env.local
+# If missing, run setup again
+./dev-tools/scripts/setup.sh
+```
+
+## Git & GitHub Issues
+
+### Permission denied (publickey)
+
+**Problem**: SSH key not configured
+
+**Solution**: Use HTTPS or setup SSH
+```bash
+# Option 1: Use HTTPS (easier)
+git clone https://github.com/findu-app/repo-name.git
+
+# Option 2: Setup SSH key
+ssh-keygen -t ed25519 -C "your-email@example.com"
+# Add to GitHub: Settings > SSH keys
+```
+
+### Pre-commit hook failures
+
+**Problem**: Code doesn't pass linting
+
+**Solution**: Fix issues or skip temporarily
+```bash
+# Fix automatically
+npm run lint:fix  # For JS/TS
+black .          # For Python
+
+# Skip hooks (emergency only)
+git commit --no-verify
+```
+
+## Performance Issues
+
+### Slow dependency installation
+
+**Solution**: Use faster registry
+```bash
+# npm
+npm config set registry https://registry.npmmirror.com
+
+# pip
+pip install -i https://pypi.org/simple -r requirements.txt
+```
+
+### High memory usage
+
+**Solution**: Limit concurrent processes
+```bash
+# Limit Node memory
+NODE_OPTIONS="--max-old-space-size=4096" npm run dev
+
+# Close unnecessary apps
+# Restart Docker Desktop
+```
+
+## Getting Help
+
+### Check Documentation
+1. Repository `CLAUDE.md` files
+2. [Internal docs](/internal/overview)
+3. Component-specific READMEs
+
+### Ask the Team
+1. Search Slack history in #dev
+2. Post specific error messages
+3. Include steps to reproduce
+
+### Debug Commands
+
+```bash
+# System info
+uname -a
+node --version
+python3 --version
+docker --version
+
+# Project status
+./findu env status
+git status
+npm list  # In project directory
+```
+
+## Common Fixes Checklist
+
+When something's not working, try these in order:
+
+1. ✓ Is Docker running?
+2. ✓ Are you in the right directory?
+3. ✓ Did you run `npm install`?
+4. ✓ Is `.env.local` configured?
+5. ✓ Did you pull latest changes?
+6. ✓ Did you restart the service?
+7. ✓ Check Slack for known issues
+
+<Note>
+Most issues are solved by one of: installing dependencies, starting Docker, or configuring environment variables.
+</Note>

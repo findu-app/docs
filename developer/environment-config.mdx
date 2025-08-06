@@ -32,15 +32,17 @@ SUPABASE_ENV=dev
 
 # Production credentials
 SUPABASE_PROJECT_ID_PROD=fhihneglvyiqwhvfedni
-SUPABASE_DB_PASSWORD_PROD=<your-prod-password>
+SUPABASE_URL_PROD=https://fhihneglvyiqwhvfedni.supabase.co
 SUPABASE_ANON_KEY_PROD=<your-prod-anon-key>
 SUPABASE_SERVICE_ROLE_KEY_PROD=<your-prod-service-key>
+SUPABASE_DB_PASSWORD_PROD=<your-prod-password>
 
 # Development credentials
 SUPABASE_PROJECT_ID_DEV=gcoysibmtdyszenxxpxu
-SUPABASE_DB_PASSWORD_DEV=<your-dev-password>
+SUPABASE_URL_DEV=https://gcoysibmtdyszenxxpxu.supabase.co
 SUPABASE_ANON_KEY_DEV=<your-dev-anon-key>
 SUPABASE_SERVICE_ROLE_KEY_DEV=<your-dev-service-key>
+SUPABASE_DB_PASSWORD_DEV=<your-dev-password>
 
 # Personal tokens
 SUPABASE_ACCESS_TOKEN=<your-personal-token>
@@ -73,6 +75,8 @@ When you switch environments, the following updates automatically:
 1. **Supabase CLI** - Points to the correct project
 2. **MCP for Claude Code** - Updates database credentials
 3. **Local environment variables** - All tools use the new settings
+4. **iOS App Configuration** - Updates Secrets.xcconfig with correct Supabase URL and key
+5. **Web App Configuration** - Updates .env file with correct environment variables
 
 ## Environment-Specific Features
 
